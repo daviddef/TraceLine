@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TraceLine — Draw. Survive. Don't lift.</title>
+<meta name="description" content="An iOS game about drawing one continuous line. Never lift your finger. Never cross your own path.">
+<link rel="icon" href="assets/icon.png">
+
+<meta property="og:title" content="TraceLine — Draw. Survive. Don't lift.">
+<meta property="og:description" content="An iOS game about drawing one continuous line. Never lift your finger. Never cross your own path.">
+<meta property="og:image" content="https://daviddef.github.io/TraceLine/assets/icon.png">
+<meta property="og:url" content="https://daviddef.github.io/TraceLine/">
+<meta name="twitter:card" content="summary_large_image">
+
+<style>
+  /* Palette is the game's own Neon theme — see TraceLine/Core/Theme.swift */
+  :root {
+    --bg: #0d0d1a;
+    --line: #6366f1;
+    --accent: #ec4899;
+    --text: #ffffff;
+    --muted: rgba(255,255,255,0.55);
+    --faint: rgba(255,255,255,0.10);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Avenir Next", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Faint play-grid, echoing GridNode */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  main { position: relative; z-index: 1; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- hero ---------- */
+  header { text-align: center; padding: 88px 0 64px; }
+
+  .icon {
+    width: 112px; height: 112px;
+    border-radius: 25%;
+    box-shadow: 0 0 60px rgba(99,102,241,0.45);
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-size: clamp(2.8rem, 9vw, 4.6rem);
+    margin: 0;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+    color: var(--line);
+    text-shadow: 0 0 44px rgba(99,102,241,0.55);
+  }
+
+  .tagline {
+    margin: 10px 0 0;
+    font-size: 0.82rem;
+    letter-spacing: 0.32em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .pitch {
+    margin: 32px auto 0;
+    max-width: 34rem;
+    font-size: 1.15rem;
+    color: rgba(255,255,255,0.82);
+  }
+
+  /* The mechanic, drawn: one continuous line that never crosses itself. */
+  .trace { width: 100%; max-width: 460px; margin: 40px auto 8px; display: block; }
+  .trace path {
+    fill: none;
+    stroke: var(--line);
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 1400;
+    animation: draw 5s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(99,102,241,0.85));
+  }
+  .trace circle { fill: var(--accent); filter: drop-shadow(0 0 8px var(--accent)); }
+  @keyframes draw {
+    0%        { stroke-dashoffset: 1400; }
+    55%, 78%  { stroke-dashoffset: 0; }
+    100%      { stroke-dashoffset: 0; opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .trace path { animation: none; stroke-dashoffset: 0; }
+  }
+
+  /* ---------- buttons ---------- */
+  .actions {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    justify-content: center; margin-top: 36px;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 15px 30px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:hover { transform: translateY(-2px); }
+
+  .btn-primary {
+    background: var(--line);
+    color: #fff;
+    box-shadow: 0 0 34px rgba(99,102,241,0.5);
+  }
+  .btn-secondary {
+    border: 1.5px solid rgba(255,255,255,0.28);
+    color: var(--text);
+  }
+  .btn-secondary:hover { border-color: var(--line); }
+
+  .status {
+    margin-top: 18px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .dot {
+    display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; background: #22c55e;
+    margin-right: 7px; vertical-align: middle;
+  }
+
+  /* ---------- rules ---------- */
+  .rules {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+    padding: 64px 0 24px;
+  }
+
+  .rule {
+    border: 1px solid var(--faint);
+    border-radius: 18px;
+    padding: 30px 28px;
+    background: rgba(255,255,255,0.018);
+  }
+  .rule-n {
+    font-size: 0.72rem; letter-spacing: 0.2em;
+    color: var(--accent); font-weight: 700;
+  }
+  .rule h3 { margin: 10px 0 8px; font-size: 1.3rem; }
+  .rule p { margin: 0; color: var(--muted); font-size: 0.97rem; }
+
+  /* ---------- screenshots ---------- */
+  section { padding: 56px 0; }
+  h2 {
+    font-size: 1.6rem; margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  .sub { color: var(--muted); margin: 0 0 30px; font-size: 0.97rem; }
+
+  .shots {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    padding-bottom: 18px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .shots img {
+    width: 232px;
+    flex: 0 0 auto;
+    border-radius: 20px;
+    border: 1px solid var(--faint);
+    scroll-snap-align: center;
+  }
+
+  /* ---------- features ---------- */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    list-style: none;
+    padding: 0; margin: 0;
+  }
+  .features li {
+    border-left: 2px solid var(--line);
+    padding: 4px 0 4px 16px;
+    color: rgba(255,255,255,0.8);
+    font-size: 0.97rem;
+  }
+
+  /* ---------- footer ---------- */
+  footer {
+    border-top: 1px solid var(--faint);
+    margin-top: 40px;
+    padding: 36px 0 56px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--line); }
+  .sep { opacity: 0.4; margin: 0 10px; }
+</style>
+</head>
+<body>
+<main>
+  <header class="wrap">
+    <img class="icon" src="assets/icon.png" alt="TraceLine app icon">
+    <h1>TraceLine</h1>
+    <p class="tagline">DRAW. SURVIVE. DON'T LIFT.</p>
+
+    <svg class="trace" viewBox="0 0 460 150" aria-hidden="true">
+      <path d="M30 120 L30 30 L430 30 L430 105 L110 105 L110 62 L370 62"/>
+      <circle cx="370" cy="62" r="7"/>
+    </svg>
+
+    <p class="pitch">
+      Press your finger to the screen and a line follows it. Fill the board before the
+      clock runs out. Lift your finger and the round is over — cross your own line and
+      it's over too.
+    </p>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="https://github.com/daviddef/TraceLine">View on GitHub</a>
+      <a class="btn btn-secondary" href="https://github.com/daviddef/TraceLine/issues">Support</a>
+    </div>
+    <p class="status"><span class="dot"></span>In TestFlight beta — coming to the App Store</p>
+  </header>
+
+  <div class="wrap">
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-n">RULE 01</div>
+        <h3>Never lift your finger</h3>
+        <p>The instant contact breaks, the round ends. No pausing to think, no repositioning. Whatever you were going to do, you commit to it now.</p>
+      </div>
+      <div class="rule">
+        <div class="rule-n">RULE 02</div>
+        <h3>Lines can never cross</h3>
+        <p>Your own path is the hazard. Every stroke you draw is one more wall you have to avoid — the board fills up with your own mistakes.</p>
+      </div>
+    </div>
+
+    <section>
+      <h2>Your line is the obstacle</h2>
+      <p class="sub">Plan too little and you strand yourself in a corner with nowhere legal to go. Take too long and the timer beats you. From level 6, obstacles fall from the top of the screen.</p>
+      <div class="shots">
+        <img src="assets/02-gameplay.png" alt="Drawing a continuous line around falling obstacles" loading="lazy">
+        <img src="assets/01-home.png" alt="TraceLine home screen" loading="lazy">
+        <img src="assets/03-levels.png" alt="Level select across World 1" loading="lazy">
+        <img src="assets/04-win.png" alt="Level clear, with three stars and score breakdown" loading="lazy">
+        <img src="assets/05-themes.png" alt="Four themes: Neon, Clay, Retro and Watercolour" loading="lazy">
+      </div>
+    </section>
+
+    <section>
+      <h2>What's in it</h2>
+      <p class="sub">Built for iPhone. iOS 16 and later.</p>
+      <ul class="features">
+        <li>One-finger controls. Anyone can play it, nobody can relax.</li>
+        <li>10 hand-tuned levels across World 1</li>
+        <li>Four themes: Neon, Clay, Retro, Watercolour</li>
+        <li>Three stars per level — clear it, clear it fast, clear it clean</li>
+        <li>Game Center leaderboard and achievements</li>
+        <li>No ads, no in-app purchases, no account</li>
+        <li>Plays entirely offline</li>
+        <li>Open source, under active development</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer class="wrap">
+    <p>
+      <a href="https://github.com/daviddef/TraceLine">Source</a><span class="sep">·</span>
+      <a href="https://github.com/daviddef/TraceLine/blob/main/PRIVACY.md">Privacy</a><span class="sep">·</span>
+      <a href="https://github.com/daviddef/TraceLine/issues">Support</a>
+    </p>
+    <p>Nothing you do in TraceLine leaves your device.</p>
+  </footer>
+</main>
+</body>
+</html>
