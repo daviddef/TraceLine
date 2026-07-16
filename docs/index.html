@@ -194,6 +194,15 @@
     border: 1px solid var(--faint);
     scroll-snap-align: center;
   }
+  /* The default scrollbar is a bright slab against a dark page. */
+  .shots { scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.55) transparent; }
+  .shots::-webkit-scrollbar { height: 6px; }
+  .shots::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 999px; }
+  .shots::-webkit-scrollbar-thumb {
+    background: rgba(99,102,241,0.55);
+    border-radius: 999px;
+  }
+  .shots::-webkit-scrollbar-thumb:hover { background: var(--line); }
 
   /* ---------- features ---------- */
   .features {
