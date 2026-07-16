@@ -27,6 +27,7 @@ KEY_PATH = Path.home() / f".appstoreconnect/private_keys/AuthKey_{KEY_ID}.p8"
 BASE = "https://api.appstoreconnect.apple.com/v1"
 
 REPO = "https://github.com/daviddef/TraceLine"
+SITE = "https://daviddef.github.io/TraceLine/"   # GitHub Pages, served from docs/
 
 CATEGORIES = [
     ("primaryCategory", "GAMES"),
@@ -111,7 +112,7 @@ def set_version_metadata(loc_id):
             "keywords": KEYWORDS,
             "promotionalText": PROMOTIONAL,
             "supportUrl": f"{REPO}/issues",
-            "marketingUrl": REPO,
+            "marketingUrl": SITE,
         }}})
     if s == 200:
         print(f"Listing text: set (keywords {len(KEYWORDS)}/100 chars)")
