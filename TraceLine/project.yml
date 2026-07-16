@@ -41,6 +41,7 @@ targets:
     dependencies:
       - sdk: SpriteKit.framework
       - sdk: GameKit.framework
+      - sdk: StoreKit.framework
 
   TraceLineTests:
     type: bundle.unit-test

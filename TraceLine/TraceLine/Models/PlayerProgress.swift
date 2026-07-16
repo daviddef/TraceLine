@@ -37,6 +37,17 @@ final class PlayerProgress {
         return stars(for: levelId - 1) >= 1
     }
 
+    // MARK: - Purchases
+    // Written only by Store, which is inactive in v1, so these stay false.
+
+    func isEntitled(_ productID: String) -> Bool {
+        defaults.bool(forKey: "iap_\(productID)")
+    }
+
+    func setEntitled(_ productID: String, _ entitled: Bool) {
+        defaults.set(entitled, forKey: "iap_\(productID)")
+    }
+
     // MARK: - Themes
 
     func activeThemeKey() -> ThemeKey {

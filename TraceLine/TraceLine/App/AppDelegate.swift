@@ -23,6 +23,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         self.window = window
 
         GameCenter.authenticate(presentingFrom: rootViewController)
+        Store.start()   // no-ops while Store.isEnabled is false
         return true
     }
 }

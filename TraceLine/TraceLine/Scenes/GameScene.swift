@@ -234,6 +234,7 @@ final class GameScene: SKScene {
         lineNode.update(points: drawingEngine.points)
         hudNode.setHintVisible(false)
         stateMachine.transition(to: .drawing)
+        Analytics.log(.levelStarted(id: levelConfig.id))
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -288,6 +289,8 @@ final class GameScene: SKScene {
         Haptics.fail()
 
         let roundScore = makeRoundScore(stars: 0)
+        Analytics.log(.levelFailed(id: levelConfig.id, reason: reason,
+                                   coveragePercent: Int(coverage * 100)))
         lineNode.triggerFail { [weak self] in
             guard let self, let view = self.view else { return }
             let scene = GameOverScene(reason: reason,
@@ -313,6 +316,8 @@ final class GameScene: SKScene {
         GameCenter.submit(score: roundScore.total)
         GameCenter.reportCompletion(levelsCleared: PlayerProgress.shared.completedLevelCount,
                                     timeRemaining: timeRemaining)
+        Analytics.log(.levelCleared(id: levelConfig.id, score: roundScore.total, stars: stars,
+                                    secondsRemaining: Int(max(0, timeRemaining))))
 
         run(.wait(forDuration: 0.6)) { [weak self] in
             guard let self, let view = self.view else { return }

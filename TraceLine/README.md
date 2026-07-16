@@ -140,9 +140,29 @@ API quirks worth knowing, all learned the hard way:
 `ObstacleDescriptor` values, and it answers with a `DrawResult`. That's what makes the
 game rules unit-testable — see `TraceLineTests/DrawingEngineTests.swift`.
 
+## Hooks that ship inert
+
+Two things exist as wiring only, exactly as the brief asks — and both are load-bearing
+for claims the App Store listing makes, so neither can be switched on casually.
+
+`Core/Store.swift` — StoreKit 2 shell, `isEnabled = false`. Every entry point is gated
+on it: no products load, no purchase can start, `isPurchased` always answers false.
+The listing declares **no in-app purchases**. Turning it on needs the products created
+in App Store Connect, a paid-apps agreement, the listing's IAP declaration updated, and
+UI to present them (there is none). `StoreTests` fails if the flag is flipped without
+that work.
+
+`Core/Analytics.swift` — event hooks with no SDK. The value is the call sites; adopting
+a provider is a change to `send(_:)` alone. Nothing leaves the device, which is what
+makes the **data not collected** privacy declaration true — attaching a provider means
+revisiting that declaration and [PRIVACY.md](../PRIVACY.md). Event names and parameter
+keys are a wire format and are pinned by `AnalyticsTests`.
+
+`Core/Haptics.swift` — `SoundHook` marks the audio cues; no assets ship yet.
+
 ## Not built in v1
 
-Multiplayer, iCloud sync, IAP, iPad layout, audio assets (hooks only in `SoundHook`),
+Multiplayer, iCloud sync, iPad layout, audio assets,
 analytics. Also not built: the pause overlay is minimal and only reachable before a
 round starts, and there is no Settings screen (the wireframe shows one; the
 architecture spec's file list does not).

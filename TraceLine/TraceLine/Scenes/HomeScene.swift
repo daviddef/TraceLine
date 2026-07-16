@@ -104,6 +104,7 @@ final class HomeScene: SKScene {
             view?.presentScene(ThemeSelectScene(theme: theme, size: size),
                                transition: .fade(withDuration: 0.3))
         case "leaderboard_button":
+            Analytics.log(.leaderboardOpened)
             GameCenter.showLeaderboard(from: view?.window?.rootViewController)
         default:
             break

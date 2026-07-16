@@ -137,6 +137,7 @@ final class ThemeSelectScene: SKScene {
 
         Haptics.tap()
         PlayerProgress.shared.setTheme(key)
+        Analytics.log(.themeSelected(key))
         theme = Theme.theme(for: key)
         rebuild()
     }
