@@ -76,6 +76,58 @@ created it, along with the distribution certificate, during the first archive.
 The app icon is generated, not hand-drawn — see `Tools/generate_icon.py`. App Store
 icons must be opaque; an alpha channel is rejected at upload.
 
+## Game Center
+
+`Tools/gamecenter_setup.py` creates the leaderboard and achievements over the API. The
+vendor identifiers it writes must match the constants in `Core/GameCenter.swift` — Game
+Center ignores unknown ids silently, so a mismatch shows up as an empty leaderboard and
+no error anywhere.
+
+```sh
+ASC_KEY_ID=... ASC_ISSUER_ID=... APP_ID=... BUNDLE_ID_RESOURCE=... \
+python3 Tools/gamecenter_setup.py
+```
+
+Game Center is entitlement-gated (`Resources/TraceLine.entitlements`) *and* gated on the
+`GAME_CENTER` capability on the App ID. Without both, `GKLocalPlayer` never authenticates
+and every submission no-ops. Note the simulator does not apply profile-based entitlements,
+so entitlements can only be verified from a device archive — and simulator Game Center
+sign-in is unreliable, so test scores on a real device.
+
+## Store listing
+
+Screenshots are captured from the app itself, at Apple's required 6.9" size:
+
+```sh
+xcodebuild test -project TraceLine.xcodeproj -scheme TraceLine -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  -only-testing:TraceLineUITests/ScreenshotTests -resultBundlePath /tmp/shots.xcresult
+xcrun xcresulttool export attachments --path /tmp/shots.xcresult --output-path /tmp/shots
+```
+
+`Tools/store_metadata.py` then pushes the listing text, categories, age rating and those
+screenshots. It is idempotent.
+
+```sh
+ASC_KEY_ID=... ASC_ISSUER_ID=... APP_ID=... SHOTS_DIR=/tmp/shots \
+python3 Tools/store_metadata.py
+```
+
+API quirks worth knowing, all learned the hard way:
+
+- There is no `APP_IPHONE_69` slot. 6.9" art (1320×2868) uploads to `APP_IPHONE_67`.
+- There is no `GAMES_ARCADE` subcategory. Games allows Action, Strategy, Sports, Casual,
+  Trivia, Puzzle, Casino, Family, Adventure, Board.
+- `appInfos` category relationships must be PATCHed one per request.
+- `ageRatingDeclaration` hangs off `appInfo`, not `app`, and `healthOrWellnessTopics` is
+  a boolean despite reading like the enum-valued content fields.
+
+**Still manual in the web UI** — no API exists for either:
+
+1. Creating the app record (`POST /v1/apps` returns 403 `does not allow 'CREATE'`).
+2. The App Privacy questionnaire (all `appDataUsages` endpoints 404). For TraceLine the
+   answer is **Data Not Collected** — see [PRIVACY.md](../PRIVACY.md).
+
 ## Layout
 
 - `Core/` — `DrawingEngine` (the two rules), `GeometryHelpers`, `Theme`, `GameState`,
