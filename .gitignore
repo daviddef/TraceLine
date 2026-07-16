@@ -1,0 +1,22 @@
+# Secrets — App Store Connect keys and signing assets must never be committed
+*.p8
+*.mobileprovision
+*.p12
+*.cer
+
+# Xcode build output
+build/
+DerivedData/
+*.xcarchive
+*.ipa
+*.dSYM.zip
+
+# XcodeGen generates the project from project.yml — see TraceLine/README.md
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+*.xcuserstate
+*.xcresult
+
+# macOS
+.DS_Store

@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TraceLine — iOS Game Wireframe</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: #0a0a0f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, sans-serif;
+    padding: 20px 10px 30px;
+    color: #fff;
+  }
+
+  h1.page-title {
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 16px;
+  }
+
+  /* ── Phone Frame ── */
+  .phone-frame {
+    width: 375px;
+    max-width: 100%;
+    height: 812px;
+    background: #111118;
+    border-radius: 54px;
+    border: 2px solid #2a2a3a;
+    box-shadow: 0 0 0 6px #0d0d14, 0 0 80px rgba(99,102,241,0.15), inset 0 0 30px rgba(0,0,0,0.6);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* notch */
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 126px; height: 34px;
+    background: #0d0d14;
+    border-radius: 0 0 22px 22px;
+    z-index: 100;
+  }
+
+  /* ── Screen ── */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+
+  /* ── Nav dots ── */
+  .nav-dots {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #444;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-dot.active { background: #818cf8; border-color: #818cf8; }
+
+  /* ── Screen labels ── */
+  .screen-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    justify-content: center;
+    max-width: 420px;
+  }
+  .screen-label {
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid #2a2a3a;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .screen-label.active {
+    border-color: #818cf8;
+    color: #818cf8;
+    background: rgba(129,140,248,0.08);
+  }
+
+  /* ────────────────────────────────────────
+     THEMES
+  ──────────────────────────────────────── */
+  :root {
+    --accent: #6366f1;
+    --accent2: #ec4899;
+    --glow: rgba(99,102,241,0.6);
+    --line-color: #6366f1;
+    --bg: #0d0d1a;
+    --card: #16162a;
+    --obstacle: #ec4899;
+  }
+  body.theme-clay {
+    --accent: #f97316;
+    --accent2: #84cc16;
+    --glow: rgba(249,115,22,0.5);
+    --line-color: #f97316;
+    --bg: #fef9f0;
+    --card: #fff7ed;
+    --obstacle: #84cc16;
+  }
+  body.theme-retro {
+    --accent: #22c55e;
+    --accent2: #facc15;
+    --glow: rgba(34,197,94,0.5);
+    --line-color: #22c55e;
+    --bg: #020f02;
+    --card: #051005;
+    --obstacle: #facc15;
+  }
+  body.theme-watercolour {
+    --accent: #06b6d4;
+    --accent2: #a78bfa;
+    --glow: rgba(6,182,212,0.4);
+    --line-color: #06b6d4;
+    --bg: #f0f9ff;
+    --card: #e0f2fe;
+    --obstacle: #a78bfa;
+  }
+
+  /* ────────────────────────────────────────
+     SCREEN 1: HOME
+  ──────────────────────────────────────── */
+  #screen-home {
+    background: var(--bg, #0d0d1a);
+    justify-content: center;
+  }
+
+  .home-bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+  body.theme-clay .home-bg-grid,
+  body.theme-watercolour .home-bg-grid { opacity: 0.3; }
+
+  .home-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    padding: 0 32px;
+  }
+
+  .home-logo-canvas {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 8px;
+  }
+
+  .home-title {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--accent);
+    text-shadow: 0 0 30px var(--glow);
+    margin-bottom: 4px;
+  }
+  body.theme-retro .home-title { font-family: 'Courier New', monospace; }
+  body.theme-clay .home-title, body.theme-watercolour .home-title { color: var(--accent); text-shadow: none; }
+
+  .home-tagline {
+    font-size: 13px;
+    color: #666;
+    letter-spacing: 1px;
+    margin-bottom: 44px;
+  }
+  body.theme-clay .home-tagline, body.theme-watercolour .home-tagline { color: #999; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 18px;
+    border-radius: 18px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 30px var(--glow);
+    margin-bottom: 14px;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  body.theme-clay .btn-primary, body.theme-watercolour .btn-primary { box-shadow: none; }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1.5px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 14px;
+    transition: all 0.15s;
+  }
+
+  .home-bottom-row {
+    display: flex;
+    gap: 14px;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .btn-icon {
+    flex: 1;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1.5px solid #2a2a3a;
+    background: rgba(255,255,255,0.03);
+    color: #888;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  body.theme-clay .btn-icon, body.theme-watercolour .btn-icon {
+    border-color: #ddd;
+    color: #999;
+    background: rgba(0,0,0,0.03);
+  }
+  .btn-icon .icon { font-size: 22px; }
+
+  /* ────────────────────────────────────────
+     SCREEN 2: LEVEL SELECT
+  ──────────────────────────────────────── */
+  #screen-levels {
+    background: var(--bg, #0d0d1a);
+    padding-top: 60px;
+  }
+
+  .screen-header {
+    width: 100%;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    border-radius: 12px;
+    border: 1.5px solid #2a2a3a;
+    background: rgba(255,255,255,0.04);
+    color: var(--accent);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  body.theme-clay .back-btn, body.theme-watercolour .back-btn {
+    border-color: #ddd; background: rgba(0,0,0,0.04);
+  }
+  .screen-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    flex: 1;
+  }
+  body.theme-clay .screen-title, body.theme-watercolour .screen-title { color: #222; }
+
+  .world-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: 0 24px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .levels-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 0 24px;
+    width: 100%;
+    overflow-y: auto;
+    max-height: 600px;
+  }
+
+  .level-cell {
+    aspect-ratio: 1;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s;
+  }
+  .level-cell:active { transform: scale(0.94); }
+
+  .level-cell.unlocked {
+    background: var(--card, #16162a);
+    border: 1.5px solid #2a2a3a;
+  }
+  body.theme-clay .level-cell.unlocked, body.theme-watercolour .level-cell.unlocked {
+    border-color: #e5e7eb;
+  }
+
+  .level-cell.completed {
+    background: var(--card, #16162a);
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 0 12px rgba(99,102,241,0.2);
+  }
+
+  .level-cell.locked {
+    background: rgba(255,255,255,0.02);
+    border: 1.5px solid #1e1e2e;
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  body.theme-clay .level-cell.locked, body.theme-watercolour .level-cell.locked {
+    background: rgba(0,0,0,0.04);
+    border-color: #e5e7eb;
+  }
+
+  .level-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+  body.theme-clay .level-number, body.theme-watercolour .level-number { color: #222; }
+
+  .level-stars {
+    font-size: 10px;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  .level-lock { font-size: 18px; opacity: 0.5; }
+
+  /* ────────────────────────────────────────
+     SCREEN 3: GAMEPLAY
+  ──────────────────────────────────────── */
+  #screen-game {
+    background: var(--bg, #0d0d1a);
+    padding-top: 50px;
+  }
+
+  .game-hud {
+    width: 100%;
+    padding: 8px 24px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hud-score {
+    display: flex;
+    flex-direction: column;
+  }
+  .hud-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 2px;
+  }
+  body.theme-clay .hud-label, body.theme-watercolour .hud-label { color: #aaa; }
+
+  .hud-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 12px var(--glow);
+  }
+  body.theme-clay .hud-value, body.theme-watercolour .hud-value { text-shadow: none; }
+
+  .hud-timer {
+    text-align: center;
+  }
+  .timer-ring {
+    width: 52px; height: 52px;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .timer-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .timer-ring .timer-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    position: relative;
+    z-index: 1;
+  }
+  body.theme-clay .timer-ring .timer-text, body.theme-watercolour .timer-ring .timer-text { color: #222; }
+
+  .hud-level {
+    text-align: right;
+  }
+
+  .hud-pause {
+    position: absolute;
+    right: 16px;
+    top: 58px;
+    font-size: 20px;
+    cursor: pointer;
+    color: #444;
+    padding: 8px;
+  }
+
+  .game-canvas-wrap {
+    width: calc(100% - 32px);
+    aspect-ratio: 1;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    border: 1.5px solid #2a2a3a;
+    flex-shrink: 0;
+  }
+  body.theme-clay .game-canvas-wrap, body.theme-watercolour .game-canvas-wrap {
+    border-color: #e5e7eb;
+  }
+
+  #gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: crosshair;
+  }
+
+  .game-instructions {
+    margin-top: 16px;
+    padding: 0 24px;
+    width: 100%;
+  }
+  .instruction-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .inst-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .inst-text {
+    font-size: 12px;
+    color: #555;
+  }
+  body.theme-clay .inst-text, body.theme-watercolour .inst-text { color: #aaa; }
+
+  .obstacle-legend {
+    display: flex;
+    gap: 10px;
+    padding: 0 24px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 0.5px;
+  }
+  body.theme-clay .legend-item, body.theme-watercolour .legend-item { color: #aaa; }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 2px;
+  }
+
+  /* ────────────────────────────────────────
+     SCREEN 4: GAME OVER
+  ──────────────────────────────────────── */
+  #screen-gameover {
+    background: var(--bg, #0d0d1a);
+    justify-content: center;
+    padding: 0 32px;
+  }
+
+  .gameover-icon {
+    font-size: 72px;
+    margin-bottom: 16px;
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-6px)}
+    40%{transform:translateX(6px)}
+    60%{transform:translateX(-4px)}
+    80%{transform:translateX(4px)}
+  }
+  .gameover-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  body.theme-clay .gameover-title, body.theme-watercolour .gameover-title { color: #222; }
+  .gameover-reason {
+    font-size: 14px;
+    color: #ec4899;
+    margin-bottom: 32px;
+    padding: 8px 20px;
+    border-radius: 20px;
+    background: rgba(236,72,153,0.1);
+    border: 1px solid rgba(236,72,153,0.3);
+  }
+  .gameover-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 36px;
+    width: 100%;
+  }
+  .stat-card {
+    flex: 1;
+    background: var(--card, #16162a);
+    border-radius: 16px;
+    padding: 16px 10px;
+    text-align: center;
+    border: 1.5px solid #2a2a3a;
+  }
+  body.theme-clay .stat-card, body.theme-watercolour .stat-card {
+    background: rgba(0,0,0,0.04);
+    border-color: #e5e7eb;
+  }
+  .stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  body.theme-clay .stat-label, body.theme-watercolour .stat-label { color: #aaa; }
+
+  .reason-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    width: 100%;
+  }
+  .reason-tab {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 12px;
+    border: 1.5px solid #2a2a3a;
+    background: transparent;
+    color: #555;
+    font-size: 11px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .reason-tab.active-reason {
+    border-color: #ec4899;
+    color: #ec4899;
+    background: rgba(236,72,153,0.08);
+  }
+  body.theme-clay .reason-tab, body.theme-watercolour .reason-tab { border-color: #e5e7eb; color: #aaa; }
+
+  /* ────────────────────────────────────────
+     SCREEN 5: WIN
+  ──────────────────────────────────────── */
+  #screen-win {
+    background: var(--bg, #0d0d1a);
+    justify-content: center;
+    padding: 0 32px;
+  }
+
+  .win-stars {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 52px;
+  }
+  .star {
+    display: inline-block;
+    filter: drop-shadow(0 0 8px gold);
+    animation: popIn 0.3s ease backwards;
+  }
+  .star.earned { color: #facc15; }
+  .star.empty { color: #2a2a3a; filter: none; }
+  .star:nth-child(1) { animation-delay: 0.1s; }
+  .star:nth-child(2) { animation-delay: 0.3s; }
+  .star:nth-child(3) { animation-delay: 0.5s; }
+  @keyframes popIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .win-title {
+    font-size: 34px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  body.theme-clay .win-title, body.theme-watercolour .win-title { color: #222; }
+  .win-level {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+  }
+  .win-bonuses {
+    width: 100%;
+    background: var(--card, #16162a);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 28px;
+    border: 1.5px solid #2a2a3a;
+  }
+  body.theme-clay .win-bonuses, body.theme-watercolour .win-bonuses {
+    background: rgba(0,0,0,0.04);
+    border-color: #e5e7eb;
+  }
+  .bonus-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #1e1e2e;
+    font-size: 14px;
+  }
+  body.theme-clay .bonus-row, body.theme-watercolour .bonus-row { border-color: #f3f4f6; }
+  .bonus-row:last-child { border-bottom: none; }
+  .bonus-name { color: #888; }
+  body.theme-clay .bonus-name, body.theme-watercolour .bonus-name { color: #aaa; }
+  .bonus-pts { color: var(--accent); font-weight: 700; }
+
+  .total-score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+  .total-label { font-size: 16px; font-weight: 700; color: #fff; }
+  body.theme-clay .total-label, body.theme-watercolour .total-label { color: #222; }
+  .total-pts { font-size: 28px; font-weight: 800; color: var(--accent);
+    text-shadow: 0 0 12px var(--glow); }
+  body.theme-clay .total-pts, body.theme-watercolour .total-pts { text-shadow: none; }
+
+  /* ────────────────────────────────────────
+     SCREEN 6: THEMES
+  ──────────────────────────────────────── */
+  #screen-themes {
+    background: var(--bg, #0d0d1a);
+    padding-top: 60px;
+    align-items: flex-start;
+  }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 0 24px;
+    width: 100%;
+  }
+
+  .theme-card {
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .theme-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--glow);
+  }
+  .theme-preview {
+    width: 100%;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .theme-preview canvas {
+    width: 100%;
+    height: 100%;
+  }
+  .theme-name-tag {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Neon preview */
+  .preview-neon { background: #0d0d1a; }
+  .preview-clay { background: #fef9f0; }
+  .preview-retro { background: #020f02; }
+  .preview-watercolour { background: #f0f9ff; }
+
+  .neon-tag { background: #16162a; color: #a5b4fc; }
+  .clay-tag { background: #fff7ed; color: #c2410c; }
+  .retro-tag { background: #051005; color: #4ade80; font-family: 'Courier New', monospace; font-size: 12px; }
+  .watercolour-tag { background: #e0f2fe; color: #0891b2; }
+
+  .theme-check {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+  .theme-card.selected .theme-check { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .unlock-note {
+    font-size: 11px;
+    color: #555;
+    padding: 12px 24px 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* scrollbar hide */
+  .levels-grid::-webkit-scrollbar { display: none; }
+
+  /* ── Responsive ── */
+  @media (max-width: 420px) {
+    .phone-frame { width: 100%; border-radius: 0; height: calc(100vw * 2.165); }
+  }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">TraceLine — Wireframe Prototype</h1>
+
+<div class="phone-frame">
+
+  <!-- ═══ SCREEN 1: HOME ═══ -->
+  <div class="screen active" id="screen-home">
+    <div class="home-bg-grid"></div>
+    <div class="home-content">
+      <canvas class="home-logo-canvas" id="logoCanvas"></canvas>
+      <div class="home-title">TraceLine</div>
+      <div class="home-tagline">DRAW. SURVIVE. DON'T LIFT.</div>
+      <button class="btn-primary" onclick="showScreen('screen-levels')">▶ &nbsp; Play</button>
+      <button class="btn-secondary" onclick="showScreen('screen-levels')">Continue — Level 7</button>
+      <div class="home-bottom-row">
+        <div class="btn-icon" onclick="showScreen('screen-themes')">
+          <span class="icon">🎨</span>
+          <span>Themes</span>
+        </div>
+        <div class="btn-icon">
+          <span class="icon">🏆</span>
+          <span>Leaderboard</span>
+        </div>
+        <div class="btn-icon">
+          <span class="icon">⚙️</span>
+          <span>Settings</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN 2: LEVELS ═══ -->
+  <div class="screen" id="screen-levels">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('screen-home')">‹</button>
+      <div class="screen-title">Choose Level</div>
+    </div>
+    <div class="world-label">World 1 — The Grid</div>
+    <div class="levels-grid" id="levelsGrid"></div>
+  </div>
+
+  <!-- ═══ SCREEN 3: GAMEPLAY ═══ -->
+  <div class="screen" id="screen-game">
+    <div class="game-hud">
+      <div class="hud-score">
+        <div class="hud-label">Score</div>
+        <div class="hud-value" id="hudScore">0</div>
+      </div>
+      <div class="hud-timer">
+        <div class="timer-ring">
+          <svg viewBox="0 0 52 52">
+            <circle cx="26" cy="26" r="22" fill="none" stroke="#2a2a3a" stroke-width="4"/>
+            <circle id="timerArc" cx="26" cy="26" r="22" fill="none"
+              stroke="var(--accent)" stroke-width="4"
+              stroke-dasharray="138" stroke-dashoffset="0"
+              stroke-linecap="round"/>
+          </svg>
+          <div class="timer-text" id="timerText">45</div>
+        </div>
+      </div>
+      <div class="hud-level">
+        <div class="hud-label">Level</div>
+        <div class="hud-value">7</div>
+      </div>
+    </div>
+    <div class="game-canvas-wrap">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+    <div class="game-instructions">
+      <div class="instruction-row">
+        <div class="inst-dot" style="background:var(--accent)"></div>
+        <div class="inst-text">Draw a line — <strong style="color:var(--accent)">never lift your finger</strong></div>
+      </div>
+      <div class="instruction-row">
+        <div class="inst-dot" style="background:#ec4899"></div>
+        <div class="inst-text">Lines <strong style="color:#ec4899">cannot cross</strong> — avoid obstacles</div>
+      </div>
+    </div>
+    <div class="obstacle-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#ec4899;border-radius:50%"></div>Blocker</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#facc15;border-radius:3px"></div>Mover</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa;border-radius:50%"></div>Magnetic</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316;border-radius:2px;transform:rotate(45deg)"></div>Shrinker</div>
+    </div>
+    <div style="position:absolute;bottom:24px;right:24px">
+      <button class="btn-primary" onclick="showScreen('screen-gameover')"
+        style="width:auto;padding:10px 20px;font-size:14px;margin:0">
+        ✕ Fail (demo)
+      </button>
+    </div>
+    <div style="position:absolute;bottom:24px;left:24px">
+      <button class="btn-secondary" onclick="showScreen('screen-win')"
+        style="width:auto;padding:10px 20px;font-size:14px;margin:0">
+        ✓ Win (demo)
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN 4: GAME OVER ═══ -->
+  <div class="screen" id="screen-gameover">
+    <div class="gameover-icon">💀</div>
+    <div class="gameover-title">Game Over</div>
+
+    <div style="width:100%;margin-bottom:16px">
+      <div style="font-size:11px;color:#555;text-align:center;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase">Why you failed</div>
+      <div class="reason-tabs">
+        <div class="reason-tab active-reason" onclick="setReason(this,'💥 Finger lifted')" id="r1">💥<br>Finger<br>Lifted</div>
+        <div class="reason-tab" onclick="setReason(this,'🚫 Line crossed')" id="r2">🚫<br>Line<br>Crossed</div>
+        <div class="reason-tab" onclick="setReason(this,'⛔ Path blocked')" id="r3">⛔<br>Path<br>Blocked</div>
+      </div>
+      <div class="gameover-reason" id="gameoverReason">💥 Finger lifted</div>
+    </div>
+
+    <div class="gameover-stats">
+      <div class="stat-card">
+        <div class="stat-value">2,340</div>
+        <div class="stat-label">Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">73%</div>
+        <div class="stat-label">Coverage</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">18s</div>
+        <div class="stat-label">Survived</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="showScreen('screen-game')" style="margin-bottom:12px">↺ &nbsp;Try Again</button>
+    <button class="btn-secondary" onclick="showScreen('screen-levels')">‹ &nbsp;Level Select</button>
+  </div>
+
+  <!-- ═══ SCREEN 5: WIN ═══ -->
+  <div class="screen" id="screen-win">
+    <div class="win-stars">
+      <span class="star earned">★</span>
+      <span class="star earned">★</span>
+      <span class="star empty">★</span>
+    </div>
+    <div class="win-title">Level Clear!</div>
+    <div class="win-level">LEVEL 7 · WORLD 1</div>
+    <div class="win-bonuses">
+      <div class="bonus-row"><span class="bonus-name">Base Score</span><span class="bonus-pts">+1,200</span></div>
+      <div class="bonus-row"><span class="bonus-name">Coverage (91%)</span><span class="bonus-pts">+890</span></div>
+      <div class="bonus-row"><span class="bonus-name">Speed Bonus ×1.5</span><span class="bonus-pts">+450</span></div>
+      <div class="bonus-row"><span class="bonus-name">Clean Run ×2</span><span class="bonus-pts">+340</span></div>
+      <div class="total-score-row">
+        <span class="total-label">Total</span>
+        <span class="total-pts">2,880</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="showScreen('screen-game')" style="margin-bottom:12px">Next Level ›</button>
+    <button class="btn-secondary" onclick="showScreen('screen-levels')">‹ &nbsp;Level Select</button>
+  </div>
+
+  <!-- ═══ SCREEN 6: THEMES ═══ -->
+  <div class="screen" id="screen-themes">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('screen-home')">‹</button>
+      <div class="screen-title">Choose Theme</div>
+    </div>
+    <div class="theme-grid">
+      <div class="theme-card selected" id="theme-neon" onclick="setTheme('','neon')">
+        <div class="theme-preview preview-neon"><canvas id="prevNeon" width="160" height="140"></canvas></div>
+        <div class="theme-name-tag neon-tag">
+          Neon <span class="theme-check">✓</span>
+        </div>
+      </div>
+      <div class="theme-card" id="theme-clay" onclick="setTheme('theme-clay','clay')">
+        <div class="theme-preview preview-clay"><canvas id="prevClay" width="160" height="140"></canvas></div>
+        <div class="theme-name-tag clay-tag">
+          Clay <span class="theme-check"></span>
+        </div>
+      </div>
+      <div class="theme-card" id="theme-retro" onclick="setTheme('theme-retro','retro')">
+        <div class="theme-preview preview-retro"><canvas id="prevRetro" width="160" height="140"></canvas></div>
+        <div class="theme-name-tag retro-tag">
+          Retro <span class="theme-check"></span>
+        </div>
+      </div>
+      <div class="theme-card" id="theme-watercolour" onclick="setTheme('theme-watercolour','watercolour')">
+        <div class="theme-preview preview-watercolour"><canvas id="prevWater" width="160" height="140"></canvas></div>
+        <div class="theme-name-tag watercolour-tag">
+          Watercolour <span class="theme-check"></span>
+        </div>
+      </div>
+    </div>
+    <div class="unlock-note">🏆 Unlock themes by completing worlds</div>
+  </div>
+
+</div><!-- /phone-frame -->
+
+<!-- Nav -->
+<div class="nav-dots">
+  <div class="nav-dot active" onclick="showScreen('screen-home',0)"></div>
+  <div class="nav-dot" onclick="showScreen('screen-levels',1)"></div>
+  <div class="nav-dot" onclick="showScreen('screen-game',2)"></div>
+  <div class="nav-dot" onclick="showScreen('screen-gameover',3)"></div>
+  <div class="nav-dot" onclick="showScreen('screen-win',4)"></div>
+  <div class="nav-dot" onclick="showScreen('screen-themes',5)"></div>
+</div>
+<div class="screen-labels">
+  <div class="screen-label active" onclick="showScreen('screen-home',0)">Home</div>
+  <div class="screen-label" onclick="showScreen('screen-levels',1)">Levels</div>
+  <div class="screen-label" onclick="showScreen('screen-game',2)">Gameplay</div>
+  <div class="screen-label" onclick="showScreen('screen-gameover',3)">Game Over</div>
+  <div class="screen-label" onclick="showScreen('screen-win',4)">Win Screen</div>
+  <div class="screen-label" onclick="showScreen('screen-themes',5)">Themes</div>
+</div>
+
+<script>
+/* ── Navigation ── */
+const screens = ['screen-home','screen-levels','screen-game','screen-gameover','screen-win','screen-themes'];
+let currentIdx = 0;
+
+function showScreen(id, idx) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (idx !== undefined) currentIdx = idx;
+  else currentIdx = screens.indexOf(id);
+  document.querySelectorAll('.nav-dot').forEach((d,i) => d.classList.toggle('active', i===currentIdx));
+  document.querySelectorAll('.screen-label').forEach((d,i) => d.classList.toggle('active', i===currentIdx));
+  if (id === 'screen-game') { initGame(); startTimer(); }
+  if (id === 'screen-themes') drawThemePreviews();
+}
+
+/* ── Level Grid ── */
+(function buildLevels() {
+  const grid = document.getElementById('levelsGrid');
+  const starMap = [3,3,3,2,3,1,0,0,0,0,0,0,0,0,0,0];
+  const locks   = [0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1];
+  for (let i=0; i<16; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'level-cell ' + (locks[i] ? 'locked' : (starMap[i]>0 ? 'completed' : 'unlocked'));
+    if (!locks[i]) {
+      const num = document.createElement('div');
+      num.className = 'level-number';
+      num.textContent = i+1;
+      const stars = document.createElement('div');
+      stars.className = 'level-stars';
+      stars.textContent = '★'.repeat(starMap[i]) + '☆'.repeat(3-starMap[i]);
+      stars.style.color = starMap[i]>0 ? '#facc15' : '#333';
+      cell.appendChild(num); cell.appendChild(stars);
+      cell.addEventListener('click', () => showScreen('screen-game', 2));
+    } else {
+      const lock = document.createElement('div');
+      lock.className = 'level-lock';
+      lock.textContent = '🔒';
+      cell.appendChild(lock);
+    }
+    grid.appendChild(cell);
+  }
+})();
+
+/* ── Theme switcher ── */
+let currentThemeCard = 'theme-neon';
+function setTheme(cls, id) {
+  document.body.className = cls;
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+  document.querySelector('#theme-' + id).classList.add('selected');
+  // refresh game canvas colours
+  if (document.getElementById('screen-game').classList.contains('active')) initGame();
+}
+
+/* ── Reason tabs ── */
+function setReason(el, text) {
+  document.querySelectorAll('.reason-tab').forEach(t => t.classList.remove('active-reason'));
+  el.classList.add('active-reason');
+  document.getElementById('gameoverReason').textContent = text;
+}
+
+/* ── Logo Canvas ── */
+(function drawLogo() {
+  const c = document.getElementById('logoCanvas');
+  const ctx = c.getContext('2d');
+  c.width = 120; c.height = 120;
+  ctx.clearRect(0,0,120,120);
+  // glow
+  ctx.shadowBlur = 16; ctx.shadowColor = '#6366f1';
+  ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 5;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  const pts = [[20,100],[20,40],[60,40],[60,80],[100,80],[100,20]];
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.stroke();
+  // dots
+  ctx.shadowBlur = 10;
+  pts.forEach(([x,y],i) => {
+    ctx.fillStyle = i===0?'#ec4899':'#6366f1';
+    ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
+  });
+})();
+
+/* ── Gameplay Canvas ── */
+let gameCtx, gameW, gameH;
+let points = [], isDrawing = false, gameActive = false;
+let obstacles = [], movers = [];
+let scoreVal = 0;
+let timerVal = 45, timerInterval = null;
+let animId = null;
+
+const THEMES_DATA = {
+  '': { bg:'#0d0d1a', line:'#6366f1', glow:'rgba(99,102,241,0.8)', grid:'rgba(255,255,255,0.04)', obs:'#ec4899', mover:'#facc15', magnet:'#a78bfa', dot:'#6366f1' },
+  'theme-clay': { bg:'#fef9f0', line:'#f97316', glow:'rgba(249,115,22,0.5)', grid:'rgba(0,0,0,0.05)', obs:'#84cc16', mover:'#06b6d4', magnet:'#a78bfa', dot:'#f97316' },
+  'theme-retro': { bg:'#020f02', line:'#22c55e', glow:'rgba(34,197,94,0.9)', grid:'rgba(34,197,94,0.07)', obs:'#facc15', mover:'#f97316', magnet:'#60a5fa', dot:'#22c55e' },
+  'theme-watercolour': { bg:'#f0f9ff', line:'#06b6d4', glow:'rgba(6,182,212,0.4)', grid:'rgba(0,0,0,0.04)', obs:'#a78bfa', mover:'#f97316', magnet:'#ec4899', dot:'#06b6d4' },
+};
+
+function getThemeData() {
+  return THEMES_DATA[document.body.className] || THEMES_DATA[''];
+}
+
+function initGame() {
+  const canvas = document.getElementById('gameCanvas');
+  const wrap = canvas.parentElement;
+  gameW = wrap.clientWidth; gameH = wrap.clientHeight;
+  canvas.width = gameW; canvas.height = gameH;
+  gameCtx = canvas.getContext('2d');
+  points = []; isDrawing = false; gameActive = true; scoreVal = 0;
+  failFlash = 0; failReason = '';
+  document.getElementById('hudScore').textContent = '0';
+
+  // spawn obstacles
+  obstacles = [];
+  movers = [];
+  for(let i=0;i<5;i++) spawnObstacle();
+  for(let i=0;i<2;i++) spawnMover();
+
+  canvas.onmousedown = startDraw;
+  canvas.onmousemove = continueDraw;
+  canvas.onmouseup = endDraw;
+  canvas.ontouchstart = e => { e.preventDefault(); startDraw(e.touches[0]); };
+  canvas.ontouchmove = e => { e.preventDefault(); continueDraw(e.touches[0]); };
+  canvas.ontouchend = e => { e.preventDefault(); endDraw(); };
+
+  if(animId) cancelAnimationFrame(animId);
+  renderGame();
+}
+
+function spawnObstacle() {
+  const td = getThemeData();
+  const types = ['blocker','magnetic','shrinker'];
+  const t = types[Math.floor(Math.random()*types.length)];
+  obstacles.push({
+    x: 20 + Math.random()*(gameW-40),
+    y: -20,
+    r: 10+Math.random()*12,
+    type: t,
+    speed: 0.4+Math.random()*0.5,
+    color: t==='blocker'?td.obs : t==='magnetic'?td.magnet : '#f97316',
+    phase: Math.random()*Math.PI*2
+  });
+}
+
+function spawnMover() {
+  const td = getThemeData();
+  movers.push({
+    x: Math.random()*gameW,
+    y: 40+Math.random()*(gameH-80),
+    w: 30+Math.random()*20, h: 10,
+    dx: (Math.random()>0.5?1:-1)*(0.6+Math.random()*0.5),
+    color: td.mover
+  });
+}
+
+let lastTime = 0;
+function renderGame() {
+  animId = requestAnimationFrame(renderGame);
+  const td = getThemeData();
+  const now = performance.now();
+  const dt = Math.min(now-lastTime, 32);
+  lastTime = now;
+
+  gameCtx.clearRect(0,0,gameW,gameH);
+  gameCtx.fillStyle = td.bg;
+  gameCtx.fillRect(0,0,gameW,gameH);
+
+  // grid
+  gameCtx.strokeStyle = td.grid;
+  gameCtx.lineWidth = 1;
+  const gs = 30;
+  for(let x=0;x<gameW;x+=gs){ gameCtx.beginPath();gameCtx.moveTo(x,0);gameCtx.lineTo(x,gameH);gameCtx.stroke(); }
+  for(let y=0;y<gameH;y+=gs){ gameCtx.beginPath();gameCtx.moveTo(0,y);gameCtx.lineTo(gameW,y);gameCtx.stroke(); }
+
+  // falling obstacles
+  obstacles.forEach(o => {
+    o.y += o.speed*(dt/16);
+    if(o.y>gameH+30) { o.y=-20; o.x=20+Math.random()*(gameW-40); }
+    gameCtx.save();
+    gameCtx.shadowBlur = document.body.className ? 0 : 12;
+    gameCtx.shadowColor = o.color;
+    gameCtx.fillStyle = o.color;
+    gameCtx.globalAlpha = 0.85;
+    if(o.type==='blocker') {
+      gameCtx.beginPath(); gameCtx.arc(o.x,o.y,o.r,0,Math.PI*2); gameCtx.fill();
+    } else if(o.type==='magnetic') {
+      // pulsing ring
+      gameCtx.beginPath(); gameCtx.arc(o.x,o.y,o.r,0,Math.PI*2); gameCtx.fill();
+      const pulse = 0.3+0.2*Math.sin(now*0.004+o.phase);
+      gameCtx.globalAlpha = pulse;
+      gameCtx.beginPath(); gameCtx.arc(o.x,o.y,o.r*1.8,0,Math.PI*2);
+      gameCtx.strokeStyle=o.color; gameCtx.lineWidth=2; gameCtx.stroke();
+    } else {
+      // diamond (shrinker)
+      const s=o.r;
+      gameCtx.beginPath(); gameCtx.moveTo(o.x,o.y-s);
+      gameCtx.lineTo(o.x+s,o.y); gameCtx.lineTo(o.x,o.y+s);
+      gameCtx.lineTo(o.x-s,o.y); gameCtx.closePath(); gameCtx.fill();
+    }
+    gameCtx.restore();
+  });
+
+  // movers
+  movers.forEach(m => {
+    m.x += m.dx*(dt/16);
+    if(m.x<0||m.x+m.w>gameW) m.dx*=-1;
+    gameCtx.save();
+    gameCtx.fillStyle = m.color;
+    gameCtx.globalAlpha = 0.7;
+    gameCtx.shadowBlur = document.body.className ? 0 : 8;
+    gameCtx.shadowColor = m.color;
+    gameCtx.fillRect(m.x,m.y,m.w,m.h);
+    gameCtx.restore();
+  });
+
+  // player line
+  if(points.length>1) {
+    // Flash red on fail
+    const failing = failFlash > 0;
+    if (failing) failFlash--;
+    const lineCol = failing ? '#ff2255' : td.line;
+    const glowCol = failing ? 'rgba(255,34,85,0.9)' : td.glow;
+
+    gameCtx.save();
+    gameCtx.strokeStyle = lineCol;
+    gameCtx.lineWidth = failing ? 6 : 4;
+    gameCtx.lineCap = 'round';
+    gameCtx.lineJoin = 'round';
+    gameCtx.shadowBlur = failing ? 20 : (document.body.className ? 0 : 14);
+    gameCtx.shadowColor = glowCol;
+
+    // trail — full opacity when failing so flash is obvious
+    for(let i=1;i<points.length;i++){
+      const alpha = failing ? 1 : (0.3 + 0.7*(i/points.length));
+      gameCtx.globalAlpha = alpha;
+      gameCtx.beginPath();
+      gameCtx.moveTo(points[i-1].x, points[i-1].y);
+      gameCtx.lineTo(points[i].x, points[i].y);
+      gameCtx.stroke();
+    }
+
+    // dot at tip
+    if(isDrawing || failing) {
+      const tip = points[points.length-1];
+      gameCtx.globalAlpha = 1;
+      gameCtx.shadowBlur = 20;
+      gameCtx.fillStyle = lineCol;
+      gameCtx.beginPath(); gameCtx.arc(tip.x,tip.y,failing?10:7,0,Math.PI*2); gameCtx.fill();
+      if (!failing) {
+        gameCtx.strokeStyle = td.dot;
+        gameCtx.lineWidth = 2;
+        gameCtx.globalAlpha = 0.4;
+        gameCtx.beginPath(); gameCtx.arc(tip.x,tip.y,14,0,Math.PI*2); gameCtx.stroke();
+      }
+    }
+    gameCtx.restore();
+  }
+
+  // idle prompt
+  if(!isDrawing && points.length===0) {
+    gameCtx.save();
+    gameCtx.fillStyle = td.line;
+    gameCtx.globalAlpha = 0.4+0.2*Math.sin(now*0.002);
+    gameCtx.font = '14px -apple-system, sans-serif';
+    gameCtx.textAlign = 'center';
+    gameCtx.fillText('Touch & draw here', gameW/2, gameH/2-8);
+    gameCtx.font = '11px -apple-system, sans-serif';
+    gameCtx.fillText('Never lift your finger!', gameW/2, gameH/2+12);
+    gameCtx.restore();
+  }
+}
+
+function getPos(e) {
+  const r = document.getElementById('gameCanvas').getBoundingClientRect();
+  return { x: (e.clientX-r.left)*(gameW/r.width), y: (e.clientY-r.top)*(gameH/r.height) };
+}
+
+function startDraw(e) {
+  if(!gameActive) return;
+  isDrawing = true;
+  const p = getPos(e);
+  points = [p];
+  scoreVal = 0;
+}
+
+/* ── Collision & Crossing Helpers ── */
+
+// Cross product of vectors (b-a) and (c-a)
+function cross(a, b, c) {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+// True if point c lies on segment [a,b] (assumes collinear)
+function onSeg(a, b, c) {
+  return Math.min(a.x,b.x) <= c.x && c.x <= Math.max(a.x,b.x) &&
+         Math.min(a.y,b.y) <= c.y && c.y <= Math.max(a.y,b.y);
+}
+
+// True if segment [p1,p2] properly intersects [p3,p4]
+function segsCross(p1, p2, p3, p4) {
+  const d1 = cross(p3,p4,p1), d2 = cross(p3,p4,p2);
+  const d3 = cross(p1,p2,p3), d4 = cross(p1,p2,p4);
+  if (((d1>0&&d2<0)||(d1<0&&d2>0)) && ((d3>0&&d4<0)||(d3<0&&d4>0))) return true;
+  if (d1===0 && onSeg(p3,p4,p1)) return true;
+  if (d2===0 && onSeg(p3,p4,p2)) return true;
+  if (d3===0 && onSeg(p1,p2,p3)) return true;
+  if (d4===0 && onSeg(p1,p2,p4)) return true;
+  return false;
+}
+
+// Check if new segment (from prev tip to new point) crosses any existing segment
+function lineWouldCross(newPt) {
+  const n = points.length;
+  if (n < 2) return false;
+  const a = points[n-1]; // last confirmed point
+  // Check against all segments except the immediately adjacent one
+  for (let i = 0; i < n - 2; i++) {
+    if (segsCross(a, newPt, points[i], points[i+1])) return true;
+  }
+  return false;
+}
+
+// Check if a point is inside any obstacle's hit zone
+function hitsObstacle(p) {
+  const HIT = 10; // extra buffer around line tip
+  for (const o of obstacles) {
+    if (Math.hypot(p.x - o.x, p.y - o.y) < o.r + HIT) return true;
+  }
+  for (const m of movers) {
+    if (p.x >= m.x - HIT && p.x <= m.x + m.w + HIT &&
+        p.y >= m.y - HIT && p.y <= m.y + m.h + HIT) return true;
+  }
+  return false;
+}
+
+/* ── Flash & trigger fail state ── */
+let failFlash = 0;
+let failReason = '';
+
+function triggerFail(reason) {
+  if (!gameActive) return;
+  gameActive = false;
+  isDrawing = false;
+  failReason = reason;
+  failFlash = 8; // flash counter
+  clearInterval(timerInterval);
+  setTimeout(() => {
+    // pre-set the reason tab on the game-over screen
+    const reasonMap = {
+      'lifted':  { text: '💥 Finger lifted',  idx: 0 },
+      'crossed': { text: '🚫 Line crossed',   idx: 1 },
+      'blocked': { text: '⛔ Hit an obstacle', idx: 2 },
+    };
+    const rm = reasonMap[reason] || reasonMap['lifted'];
+    document.getElementById('gameoverReason').textContent = rm.text;
+    document.querySelectorAll('.reason-tab').forEach((t,i) => {
+      t.classList.toggle('active-reason', i === rm.idx);
+    });
+    showScreen('screen-gameover', 3);
+  }, 700);
+}
+
+function continueDraw(e) {
+  if(!isDrawing || !gameActive) return;
+  const p = getPos(e);
+  const last = points[points.length-1];
+  const d = Math.hypot(p.x-last.x, p.y-last.y);
+  if(d < 3) return;
+
+  // Check self-crossing first
+  if (lineWouldCross(p)) {
+    triggerFail('crossed');
+    return;
+  }
+
+  // Check obstacle collision
+  if (hitsObstacle(p)) {
+    triggerFail('blocked');
+    return;
+  }
+
+  points.push(p);
+  scoreVal += Math.round(d * 2);
+  document.getElementById('hudScore').textContent = scoreVal.toLocaleString();
+}
+
+function endDraw() {
+  if(!gameActive) return;
+  // Lifting finger = immediate fail (the core rule)
+  if(isDrawing && points.length > 3) {
+    triggerFail('lifted');
+    return;
+  }
+  isDrawing = false;
+}
+
+/* ── Timer ── */
+function startTimer() {
+  clearInterval(timerInterval);
+  timerVal = 45;
+  document.getElementById('timerText').textContent = timerVal;
+  const arc = document.getElementById('timerArc');
+  const C = 2*Math.PI*22;
+  timerInterval = setInterval(() => {
+    timerVal--;
+    document.getElementById('timerText').textContent = timerVal;
+    arc.style.strokeDashoffset = C*(1-timerVal/45);
+    if(timerVal<=0) { clearInterval(timerInterval); showScreen('screen-gameover',3); }
+  }, 1000);
+}
+
+/* ── Theme Previews ── */
+function drawThemePreviews() {
+  const previews = [
+    { id:'prevNeon', bg:'#0d0d1a', line:'#6366f1', glow:true, grid:'rgba(255,255,255,0.04)', obs:'#ec4899' },
+    { id:'prevClay', bg:'#fef9f0', line:'#f97316', glow:false, grid:'rgba(0,0,0,0.06)', obs:'#84cc16' },
+    { id:'prevRetro', bg:'#020f02', line:'#22c55e', glow:true, grid:'rgba(34,197,94,0.08)', obs:'#facc15' },
+    { id:'prevWater', bg:'#f0f9ff', line:'#06b6d4', glow:false, grid:'rgba(0,0,0,0.05)', obs:'#a78bfa' },
+  ];
+  previews.forEach(p => {
+    const c = document.getElementById(p.id);
+    if(!c) return;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,160,140);
+    ctx.fillStyle = p.bg; ctx.fillRect(0,0,160,140);
+    // grid
+    ctx.strokeStyle = p.grid; ctx.lineWidth=1;
+    for(let x=0;x<160;x+=20){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,140);ctx.stroke(); }
+    for(let y=0;y<140;y+=20){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(160,y);ctx.stroke(); }
+    // demo path
+    ctx.save();
+    ctx.strokeStyle = p.line; ctx.lineWidth=4; ctx.lineCap='round'; ctx.lineJoin='round';
+    if(p.glow){ ctx.shadowBlur=12; ctx.shadowColor=p.line; }
+    ctx.beginPath();
+    ctx.moveTo(20,120); ctx.lineTo(20,40); ctx.lineTo(80,40); ctx.lineTo(80,90);
+    ctx.lineTo(140,90); ctx.lineTo(140,20);
+    ctx.stroke();
+    // dot
+    ctx.fillStyle=p.line; ctx.beginPath(); ctx.arc(140,20,5,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    // obstacle
+    ctx.save();
+    ctx.fillStyle = p.obs;
+    if(p.glow){ ctx.shadowBlur=8; ctx.shadowColor=p.obs; }
+    ctx.globalAlpha=0.85;
+    ctx.beginPath(); ctx.arc(110,60,10,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+// init
+drawThemePreviews();
+</script>
+</body>
+</html>

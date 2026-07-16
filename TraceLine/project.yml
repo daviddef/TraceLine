@@ -1,0 +1,76 @@
+name: TraceLine
+options:
+  bundleIdPrefix: com.yourname
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+targets:
+  TraceLine:
+    type: application
+    platform: iOS
+    sources:
+      - path: TraceLine
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.defranceski.traceline
+        PRODUCT_NAME: TraceLine
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIStatusBarHidden: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_CFBundleDisplayName: TraceLine
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # The game ships no encryption; declaring it here skips the export-compliance
+        # question on every TestFlight build.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        # Signing identity is supplied at archive time rather than hard-coded here:
+        #   xcodebuild archive ... DEVELOPMENT_TEAM=<team> -allowProvisioningUpdates
+        # Simulator builds need no signing and work without it.
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - sdk: SpriteKit.framework
+      - sdk: GameKit.framework
+
+  TraceLineTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: TraceLineTests
+    dependencies:
+      - target: TraceLine
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        CODE_SIGNING_ALLOWED: NO
+        GENERATE_INFOPLIST_FILE: YES
+
+  TraceLineUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: TraceLineUITests
+    dependencies:
+      - target: TraceLine
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        CODE_SIGNING_ALLOWED: NO
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  TraceLine:
+    build:
+      targets:
+        TraceLine: all
+        TraceLineTests: [test]
+        TraceLineUITests: [test]
+    test:
+      targets: [TraceLineTests, TraceLineUITests]
+    run:
+      config: Debug
