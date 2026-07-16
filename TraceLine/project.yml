@@ -11,8 +11,13 @@ targets:
     platform: iOS
     sources:
       - path: TraceLine
+        excludes:
+          - Resources/TraceLine.entitlements
     settings:
       base:
+        # Game Center is entitlement-gated: without this, GKLocalPlayer never
+        # authenticates and every score/achievement submission is silently inert.
+        CODE_SIGN_ENTITLEMENTS: TraceLine/Resources/TraceLine.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: com.defranceski.traceline
         PRODUCT_NAME: TraceLine
         MARKETING_VERSION: "1.0"

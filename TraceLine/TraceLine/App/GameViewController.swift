@@ -14,8 +14,10 @@ final class GameViewController: UIViewController {
         super.viewDidLoad()
         skView.ignoresSiblingOrder = true
         #if DEBUG
-        skView.showsFPS = true
-        skView.showsNodeCount = true
+        // The debug overlay must never appear in App Store screenshots.
+        let isCapturing = CommandLine.arguments.contains("--screenshot")
+        skView.showsFPS = !isCapturing
+        skView.showsNodeCount = !isCapturing
         #endif
     }
 
@@ -27,6 +29,17 @@ final class GameViewController: UIViewController {
         hasPresentedScene = true
 
         #if DEBUG
+        // Boot straight into a level, for screenshots and for iterating on a specific
+        // level without playing up to it: --level 8
+        if let i = CommandLine.arguments.firstIndex(of: "--level"),
+           i + 1 < CommandLine.arguments.count,
+           let id = Int(CommandLine.arguments[i + 1]),
+           let level = LevelConfig.level(id: id) {
+            skView.presentScene(GameScene(levelConfig: level, theme: Theme.active,
+                                          size: view.bounds.size))
+            return
+        }
+
         // Reaching the win screen legitimately needs a full round, so allow jumping
         // straight to it while iterating on its layout.
         if CommandLine.arguments.contains("--debug-win"),

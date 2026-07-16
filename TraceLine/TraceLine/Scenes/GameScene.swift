@@ -26,6 +26,15 @@ final class GameScene: SKScene {
     // MARK: - Play area
     private var playRect: CGRect = .zero
 
+    /// Screenshot mode: the board is posed, so nothing new should spawn or drift in.
+    private var isDemoPath: Bool {
+        #if DEBUG
+        return CommandLine.arguments.contains("--demo-path")
+        #else
+        return false
+        #endif
+    }
+
     // MARK: - Init
     init(levelConfig: LevelConfig, theme: Theme, size: CGSize) {
         self.levelConfig = levelConfig
@@ -44,7 +53,90 @@ final class GameScene: SKScene {
         setupScene()
         setupHUD()
         timeRemaining = levelConfig.timeLimit
+
+        #if DEBUG
+        if CommandLine.arguments.contains("--demo-path") { seedDemoPath() }
+        #endif
     }
+
+    #if DEBUG
+    /// Draws a representative round for App Store screenshots.
+    ///
+    /// The path is fed through the real DrawingEngine and drawn by the real LineNode,
+    /// so what appears is genuine output — the engine would reject the path outright if
+    /// it broke either rule. The scene stays in `.idle`, so nothing moves or fails while
+    /// the screenshot is taken.
+    private func seedDemoPath() {
+        let inset: CGFloat = 28
+        let rows = 8
+        let spacing = (playRect.height - inset * 2) / CGFloat(rows - 1)
+
+        var corners: [CGPoint] = []
+        var y = playRect.maxY - inset
+        var goingRight = true
+        for _ in 0..<rows {
+            let left = playRect.minX + inset, right = playRect.maxX - inset
+            corners.append(CGPoint(x: goingRight ? left : right, y: y))
+            corners.append(CGPoint(x: goingRight ? right : left, y: y))
+            y -= spacing
+            goingRight.toggle()
+        }
+
+        guard let start = corners.first else { return }
+        drawingEngine.begin(at: start)
+        // Walk between corners in small steps, the way real touch events arrive.
+        for i in 0..<(corners.count - 1) {
+            let a = corners[i], b = corners[i + 1]
+            let steps = max(1, Int(GeometryHelpers.distance(a, b) / 6))
+            for s in 1...steps {
+                let t = CGFloat(s) / CGFloat(steps)
+                let p = CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
+                guard drawingEngine.extend(to: p, obstacles: []) == .ok else { return }
+            }
+        }
+
+        lineNode.update(points: drawingEngine.points)
+        score = Int(drawingEngine.totalDistance * 2)
+        hudNode.updateScore(score)
+        hudNode.setHintVisible(false)
+        coverage = drawingEngine.coveragePercent(in: playRect, gridSize: levelConfig.gridSize)
+        hudNode.updateCoverage(coverage, targetFraction: levelConfig.targetCoverage,
+                               barWidth: size.width - 48)
+        hudNode.updateTimer(remaining: levelConfig.timeLimit * 0.55)
+
+        // Pose obstacles in the gaps between passes. An obstacle touching the line would
+        // mean the round had already ended, so a screenshot showing that misstates the
+        // rules — keep them clear of the drawn path.
+        var placed: [CGPoint] = []
+        for type in levelConfig.obstacleTypes.prefix(2) {
+            guard let spot = clearSpot(awayFrom: placed) else { continue }
+            let obs = ObstacleNode(type: type, theme: theme)
+            obs.position = spot
+            obs.fallSpeed = 0
+            obs.zPosition = 5
+            obstacleNodes.append(obs)
+            addChild(obs)
+            placed.append(spot)
+        }
+    }
+
+    /// Finds a point inside the play area that clears both the drawn line and any
+    /// already-placed obstacle.
+    private func clearSpot(awayFrom placed: [CGPoint]) -> CGPoint? {
+        let fromLine: CGFloat = 46
+        let fromEachOther: CGFloat = 110
+        for _ in 0..<400 {
+            let p = CGPoint(x: .random(in: playRect.minX + 40 ... playRect.maxX - 40),
+                            y: .random(in: playRect.minY + 40 ... playRect.maxY - 40))
+            let clearsLine = drawingEngine.points.allSatisfy {
+                GeometryHelpers.distance($0, p) > fromLine
+            }
+            let clearsOthers = placed.allSatisfy { GeometryHelpers.distance($0, p) > fromEachOther }
+            if clearsLine && clearsOthers { return p }
+        }
+        return nil
+    }
+    #endif
 
     private func setupPlayArea() {
         let inset: CGFloat = 24
@@ -88,7 +180,8 @@ final class GameScene: SKScene {
         }
 
         spawnTimer += dt
-        if spawnTimer >= levelConfig.spawnInterval && obstacleNodes.count < levelConfig.maxObstacles {
+        if !isDemoPath,
+           spawnTimer >= levelConfig.spawnInterval && obstacleNodes.count < levelConfig.maxObstacles {
             spawnObstacle()
             spawnTimer = 0
         }

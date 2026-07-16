@@ -8,10 +8,16 @@ final class LineNode: SKNode {
     private(set) var isFailing = false
     private let theme: Theme
 
-    /// The path is grown a point at a time rather than rebuilt from the full array
-    /// on every touch, which matters once a path is thousands of points long.
-    private var path = CGMutablePath()
-    private var renderedPointCount = 0
+    /// The engine's points, decimated for drawing. A straight run needs two vertices,
+    /// not one every 4pt: SKShapeNode tessellates a wide stroke per-vertex, and piling
+    /// up near-collinear points makes the round joins overlap and tear the glow into
+    /// visible triangles. Collision still uses the engine's full-resolution points —
+    /// this only affects what is drawn.
+    private var renderPoints: [CGPoint] = []
+    private var consumedPointCount = 0
+
+    /// Max perpendicular deviation (pt) before a point earns its own vertex.
+    private static let simplifyTolerance: CGFloat = 0.6
 
     init(theme: Theme) {
         self.theme = theme
@@ -52,19 +58,38 @@ final class LineNode: SKNode {
             return
         }
 
-        if points.count > renderedPointCount, renderedPointCount >= 1 {
-            // Common case: append only what's new.
-            for p in points[renderedPointCount...] { path.addLine(to: p) }
-        } else if points.count != renderedPointCount {
-            // The array changed shape (a reset, or a new round) — rebuild from scratch.
-            path = CGMutablePath()
-            path.move(to: points[0])
-            for p in points.dropFirst() { path.addLine(to: p) }
+        // A shorter array than last time means a new round — start over.
+        if points.count < consumedPointCount {
+            renderPoints = []
+            consumedPointCount = 0
         }
-        renderedPointCount = points.count
+        for p in points[consumedPointCount...] { appendSimplified(p) }
+        consumedPointCount = points.count
 
-        shapeNode.path = path
-        glowNode?.path = path
+        let path = CGMutablePath()
+        path.move(to: renderPoints[0])
+        for p in renderPoints.dropFirst() { path.addLine(to: p) }
+        // Both nodes get the same immutable path; never hand SpriteKit a CGMutablePath
+        // that is still being written to.
+        let snapshot = path.copy()
+        shapeNode.path = snapshot
+        glowNode?.path = snapshot
+    }
+
+    /// Extends the drawn polyline, dropping the previous point when it turns out to sit
+    /// on the straight line between its neighbours.
+    private func appendSimplified(_ p: CGPoint) {
+        guard renderPoints.count >= 2 else {
+            renderPoints.append(p)
+            return
+        }
+        let anchor = renderPoints[renderPoints.count - 2]
+        let candidate = renderPoints[renderPoints.count - 1]
+        if GeometryHelpers.distanceToSegment(candidate, anchor, p) < Self.simplifyTolerance {
+            renderPoints[renderPoints.count - 1] = p   // straight run — extend it
+        } else {
+            renderPoints.append(p)                     // a real corner
+        }
     }
 
     /// Flash red on fail, then fade out.
@@ -87,8 +112,8 @@ final class LineNode: SKNode {
 
     func reset() {
         isFailing = false
-        path = CGMutablePath()
-        renderedPointCount = 0
+        renderPoints = []
+        consumedPointCount = 0
         shapeNode.path = nil
         glowNode?.path = nil
         shapeNode.alpha = theme.lineAlpha
