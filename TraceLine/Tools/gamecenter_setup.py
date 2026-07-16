@@ -26,6 +26,7 @@ ISSUER = os.environ["ASC_ISSUER_ID"]
 APP_ID = os.environ["APP_ID"]
 BUNDLE_RESOURCE_ID = os.environ.get("BUNDLE_ID_RESOURCE")
 LOCALE = os.environ.get("ASC_LOCALE", "en-AU")
+ART_DIR = Path(os.environ["ART_DIR"]) if os.environ.get("ART_DIR") else None
 KEY_PATH = Path.home() / f".appstoreconnect/private_keys/AuthKey_{KEY_ID}.p8"
 
 BASE = "https://api.appstoreconnect.apple.com/v1"
@@ -212,6 +213,71 @@ def create_achievements(detail_id, found):
         print(f"Achievement: created {vid} ({a['points']} pts)")
 
 
+def upload_achievement_art(detail_id):
+    """Attaches the 512x512 artwork Apple requires before release.
+
+    Generate it first with Tools/generate_achievement_art.py.
+    """
+    if not ART_DIR:
+        return
+    found = existing(detail_id, "gameCenterAchievements")
+    for a in ACHIEVEMENTS:
+        vid = a["vendor_id"]
+        art = ART_DIR / f"{vid.split('.')[-1]}.png"
+        if not art.exists():
+            print(f"  ! no artwork for {vid} at {art}")
+            continue
+        ach_id = found.get(vid)
+        if not ach_id:
+            continue
+
+        s, d = call("GET", f"/gameCenterAchievements/{ach_id}/localizations")
+        loc_id = next((l["id"] for l in d.get("data", [])), None)
+        if not loc_id:
+            continue
+
+        # A reserved-but-uncommitted image still comes back from this GET, so an
+        # existence check alone would treat a failed upload as done. Only a delivered
+        # asset counts; anything else is scrapped and redone.
+        s, d = call("GET", f"/gameCenterAchievementLocalizations/{loc_id}/gameCenterAchievementImage")
+        stale = d.get("data")
+        if stale:
+            state = (stale["attributes"].get("assetDeliveryState") or {}).get("state")
+            if state == "COMPLETE":
+                print(f"Artwork {vid}: already attached")
+                continue
+            call("DELETE", f"/gameCenterAchievementImages/{stale['id']}")
+
+        blob = art.read_bytes()
+        s, d = call("POST", "/gameCenterAchievementImages", {
+            "data": {"type": "gameCenterAchievementImages",
+                     "attributes": {"fileName": art.name, "fileSize": len(blob)},
+                     "relationships": {"gameCenterAchievementLocalization": {
+                         "data": {"type": "gameCenterAchievementLocalizations", "id": loc_id}}}}})
+        if s not in (200, 201):
+            show = d.get("errors", [{}])[0]
+            print(f"  ! reserve artwork {vid} ({s}): {show.get('detail')}")
+            continue
+        img_id = d["data"]["id"]
+
+        for op in d["data"]["attributes"]["uploadOperations"]:
+            chunk = blob[op["offset"]:op["offset"] + op["length"]]
+            hdrs = {h["name"]: h["value"] for h in op["requestHeaders"]}
+            req = urllib.request.Request(op["url"], method=op["method"], data=chunk, headers=hdrs)
+            try:
+                urllib.request.urlopen(req).read()
+            except urllib.error.HTTPError as e:
+                print(f"  ! artwork chunk failed for {vid}: {e.code}")
+                break
+
+        # Unlike appScreenshots, this resource has no sourceFileChecksum attribute —
+        # sending one is rejected outright.
+        s, d = call("PATCH", f"/gameCenterAchievementImages/{img_id}", {
+            "data": {"type": "gameCenterAchievementImages", "id": img_id,
+                     "attributes": {"uploaded": True}}})
+        print(f"Artwork {vid}: uploaded" if s == 200 else f"  ! commit artwork {vid} ({s})")
+
+
 def main():
     if not KEY_PATH.exists():
         sys.exit(f"API key not found at {KEY_PATH}")
@@ -219,6 +285,7 @@ def main():
     detail_id = game_center_detail()
     create_leaderboard(detail_id, existing(detail_id, "gameCenterLeaderboards"))
     create_achievements(detail_id, existing(detail_id, "gameCenterAchievements"))
+    upload_achievement_art(detail_id)
     total = sum(a["points"] for a in ACHIEVEMENTS)
     print(f"\nDone. Achievement points: {total}/1000.")
 
