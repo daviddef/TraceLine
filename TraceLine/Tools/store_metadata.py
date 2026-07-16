@@ -31,6 +31,7 @@ REPO = "https://github.com/daviddef/TraceLine"
 CATEGORIES = [
     ("primaryCategory", "GAMES"),
     ("primarySubcategoryOne", "GAMES_PUZZLE"),
+    ("primarySubcategoryTwo", "GAMES_ACTION"),
 ]
 
 SUBTITLE = "Draw. Survive. Don't lift."
