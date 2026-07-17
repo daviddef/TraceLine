@@ -150,6 +150,72 @@ theatre; at thirty it earns its keep.
 
 ---
 
+## Exploring: safe zones
+
+> "Safe zones, where objects rebound off and you can hide."
+
+The most interesting idea on this list, for three reasons.
+
+### 1. It fixes the deepest problem in the game
+
+Finding 2 above: coverage counts cells the line passes through, so on an empty board the
+optimal strategy is a serpentine sweep. Every hazard so far is a *thing to dodge* on that
+empty board — none of them change its shape. Safe zones are the first proposal that makes
+the board **terrain**. Obstacles rebounding off them turns an empty field into a place
+with structure, and a sweep stops being either optimal or possible.
+
+That is worth more than another hazard type.
+
+### 2. It unlocks the Fuse
+
+I said earlier that Volfied's flame doesn't port, because racing a burning line to safety
+presupposes a **safe zone** and TraceLine has none. That objection dies the moment this
+exists. Safe zones are the missing primitive the whole Qix lineage is built on, and they
+make the 1989 solution available to us.
+
+### 3. It is the mirror of the Cutter
+
+The Cutter makes you **spend line**. A safe zone makes you **spend time** — shelter costs
+seconds against a clock you cannot pause. Two costs, opposite currencies, same decision:
+is this worth it? That symmetry is the sign of a mechanic that belongs.
+
+### The constraint nobody can design around
+
+**You can never enclose an area**, so territory cannot be *earned* the Qix way. Touching
+your own line is a crossing, and a crossing ends the round — closing a loop is by
+definition a fail. Qix claims territory by sealing a region against an edge; TraceLine
+structurally cannot.
+
+So zones are **placed by level design**, not won. That is a smaller idea than Qix's, and
+it is the only one the rules permit.
+
+### How it would work
+
+- **Obstacles rebound.** A zone is solid to hazards; they bounce off it. This is what
+  makes zones read as terrain rather than as a UI overlay.
+- **Cutters cannot enter, so zones cast shadows.** A zone blocking a lane clips that
+  cutter's remaining sweep — line beyond it is out of reach. The doomed-tail preview
+  already computes from `remainingSweep`, so it would show these shelters **for free**,
+  with no new code.
+- **Your line is safe inside.** That is the hiding.
+
+### The two ways it goes wrong
+
+- **Camping.** If hiding is free, hide. It isn't free: the clock runs and the coverage
+  target is most of the board, so shelter always costs progress. That tension is the
+  mechanic — but it needs playtesting, not confidence.
+- **Free coverage.** If cells inside a zone count toward the target, a big zone is a safe
+  farm and the game is over. Zones must be **small refuges, not fields** — or coverage
+  inside them shouldn't count at all. Sizing is the whole balance question.
+
+### Open question
+
+Static pockets are the cheap, rules-compatible version. The richer one is an
+**edge-anchored** claim: a line run from one board edge to another divides the board, and
+the smaller side becomes safe. That is Qix, it is legal under rule 2 (no loop is closed —
+the edges do the sealing), and it would be a far bigger change to the win condition.
+Worth prototyping the cheap one first and seeing whether the idea has legs.
+
 ## Next
 
 - **Endless mode.** The highest-conviction bet in the research: the only structural
