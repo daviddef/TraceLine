@@ -23,6 +23,9 @@ final class GameScene: SKScene {
     private var spawnTimer: TimeInterval = 0
     private var coverage: Float = 0
 
+    /// Two at once is already busy: each crosses the whole board.
+    private static let maxConcurrentCutters = 2
+
     // MARK: - Play area
     private var playRect: CGRect = .zero
 
@@ -176,17 +179,18 @@ final class GameScene: SKScene {
         // Obstacles
         for obs in obstacleNodes {
             obs.update(dt: dt, playRect: playRect)
-            if obs.position.y < playRect.minY - 40 { recycleObstacle(obs) }
+            if obs.isOffBoard(playRect) { recycleObstacle(obs) }
         }
 
         spawnTimer += dt
-        if !isDemoPath,
-           spawnTimer >= levelConfig.spawnInterval && obstacleNodes.count < levelConfig.maxObstacles {
+        if !isDemoPath, spawnTimer >= levelConfig.spawnInterval {
             spawnObstacle()
             spawnTimer = 0
         }
 
         guard stateMachine.phase == .drawing else { return }
+
+        applyCutters()
 
         // An obstacle can fall onto a finger that isn't moving, so the tip is
         // re-checked every frame and not only on touchesMoved.
@@ -269,6 +273,26 @@ final class GameScene: SKScene {
                 y: min(max(point.y, playRect.minY), playRect.maxY))
     }
 
+    /// Cutters sever the line where they cross it, keeping only the piece still held by
+    /// the finger. Coverage is recomputed from the surviving points, so the bar retracts
+    /// on its own and the player watches the loss happen.
+    private func applyCutters() {
+        let cutters = obstacleNodes.filter { $0.obstacleType.severs }
+        guard !cutters.isEmpty, drawingEngine.pointCount >= 2 else { return }
+
+        var didCut = false
+        for cutter in cutters {
+            let descriptor = cutter.descriptor()
+            if drawingEngine.cut(where: { descriptor.intersectsSegment(from: $0, to: $1) }) {
+                didCut = true
+            }
+        }
+        guard didCut else { return }
+
+        lineNode.update(points: drawingEngine.points)
+        Haptics.cut()
+    }
+
     private func obstacleDescriptors() -> [ObstacleDescriptor] {
         obstacleNodes.map { $0.descriptor() }
     }
@@ -337,8 +361,29 @@ final class GameScene: SKScene {
     }
 
     // MARK: - Obstacles
+    /// Obstacles still on the board that end the round on contact. Cutters are excluded:
+    /// they cross and leave within a couple of seconds, whereas a blocker sits there for
+    /// most of the round.
+    private var lethalObstacleCount: Int {
+        obstacleNodes.filter { !$0.obstacleType.severs }.count
+    }
+
+    private var cutterCount: Int {
+        obstacleNodes.filter { $0.obstacleType.severs }.count
+    }
+
     private func spawnObstacle() {
         guard let type = levelConfig.obstacleTypes.randomElement() else { return }
+
+        if type == .cutter {
+            // Budgeted separately from `maxObstacles`. Sharing that cap meant a board
+            // full of slow blockers starved cutters out entirely — they never appeared.
+            guard cutterCount < Self.maxConcurrentCutters else { return }
+            return spawnCutter()
+        }
+
+        guard lethalObstacleCount < levelConfig.maxObstacles else { return }
+
         let obs = ObstacleNode(type: type, theme: theme)
 
         // Spec: keep at least 60pt between obstacles at spawn. Try a handful of
@@ -352,6 +397,49 @@ final class GameScene: SKScene {
         addChild(obs)
     }
 
+    /// A cutter runs a horizontal lane. The lane is drawn first and the cutter enters
+    /// from off-board, so the hazard is on screen before it can take anything — the
+    /// player has to be able to see the trap before it springs.
+    private func spawnCutter() {
+        let inset = ObstacleNode.cutterSize.height
+        let y = CGFloat.random(in: playRect.minY + inset ... playRect.maxY - inset)
+        let leftToRight = Bool.random()
+
+        let obs = ObstacleNode(type: .cutter, theme: theme)
+        obs.position = CGPoint(x: leftToRight ? playRect.minX - ObstacleNode.cutterSize.width
+                                              : playRect.maxX + ObstacleNode.cutterSize.width,
+                               y: y)
+        obs.startCrossing(direction: leftToRight ? 1 : -1,
+                          speed: 110 + CGFloat(levelConfig.id) * 6)
+        obs.zPosition = 6
+
+        let lane = laneNode(atY: y)
+        obs.laneNode = lane
+        addChild(lane)
+
+        obstacleNodes.append(obs)
+        addChild(obs)
+    }
+
+    /// The visible track a cutter will run along.
+    private func laneNode(atY y: CGFloat) -> SKNode {
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: playRect.minX, y: y))
+        path.addLine(to: CGPoint(x: playRect.maxX, y: y))
+
+        let lane = SKShapeNode(path: path)
+        lane.strokeColor = theme.obstacleColors[ObstacleType.cutter.themeIndex]
+            .withAlphaComponent(0.35)
+        lane.lineWidth = 1.5
+        lane.lineCap = .round
+        lane.zPosition = 4
+        // Dashes read as a track rather than as part of anyone's drawing.
+        lane.path = path.copy(dashingWithPhase: 0, lengths: [8, 7])
+        lane.alpha = 0
+        lane.run(.fadeIn(withDuration: 0.25))
+        return lane
+    }
+
     private func findSpawnX() -> CGFloat? {
         let minSpacing: CGFloat = 60
         let recent = obstacleNodes.filter { $0.position.y > playRect.maxY - minSpacing }
@@ -363,6 +451,9 @@ final class GameScene: SKScene {
     }
 
     private func recycleObstacle(_ obs: ObstacleNode) {
+        if let lane = obs.laneNode {
+            lane.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+        }
         obs.removeFromParent()
         obstacleNodes.removeAll { $0 === obs }
     }

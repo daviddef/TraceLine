@@ -1,7 +1,7 @@
 import Foundation
 
 enum ObstacleType: String, Codable, CaseIterable {
-    case blocker, mover, magnetic, shrinker
+    case blocker, mover, magnetic, shrinker, cutter
 
     var themeIndex: Int {
         switch self {
@@ -9,8 +9,12 @@ enum ObstacleType: String, Codable, CaseIterable {
         case .mover:    return 1
         case .magnetic: return 2
         case .shrinker: return 3
+        case .cutter:   return 4
         }
     }
+
+    /// Cutters sever the line instead of ending the round. Every other type is a wall.
+    var severs: Bool { self == .cutter }
 }
 
 struct LevelConfig: Codable, Identifiable {

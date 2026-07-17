@@ -8,11 +8,19 @@ final class ObstacleNode: SKNode {
     /// Horizontal speed, movers only. Sign is the current direction of travel.
     private var driftSpeed: CGFloat = 0
 
+    /// Cutters only: speed across the board. Sign is the direction of travel.
+    private var crossSpeed: CGFloat = 0
+
+    /// The lane a cutter runs along, drawn on the board so the hazard is visible before
+    /// it arrives. Owned by the scene, not this node — it must not move with the cutter.
+    weak var laneNode: SKNode?
+
     // Half-extents of the hit zone, kept in one place so the visual shape and the
     // descriptor handed to DrawingEngine can never drift apart.
     private static let circleRadius: CGFloat = 14
     private static let magneticRadius: CGFloat = 12
     private static let moverSize = CGSize(width: 50, height: 12)
+    static let cutterSize = CGSize(width: 46, height: 18)
 
     // MARK: - Init
     init(type: ObstacleType, theme: Theme) {
@@ -58,6 +66,23 @@ final class ObstacleNode: SKNode {
                 .fadeAlpha(to: 0.5, duration: 0.6),
             ])))
 
+        case .cutter:
+            // A blunt-nosed body pointing the way it travels — reads as a train, car or
+            // beetle depending on the theme's palette.
+            let w = Self.cutterSize.width, h = Self.cutterSize.height
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: -w / 2, y: -h / 2))
+            path.addLine(to: CGPoint(x: w / 2 - h / 2, y: -h / 2))
+            path.addQuadCurve(to: CGPoint(x: w / 2 - h / 2, y: h / 2),
+                              control: CGPoint(x: w / 2 + h / 2, y: 0))
+            path.addLine(to: CGPoint(x: -w / 2, y: h / 2))
+            path.closeSubpath()
+            let shape = SKShapeNode(path: path)
+            shape.fillColor = color
+            shape.strokeColor = .clear
+            addChild(shape)
+            if theme.obstacleGlow { addGlow(like: shape, color: color) }
+
         case .shrinker:
             let path = CGMutablePath()
             let s = Self.circleRadius
@@ -87,6 +112,22 @@ final class ObstacleNode: SKNode {
     }
 
     // MARK: - Movement
+    /// Sends a cutter across the board from `direction` (+1 = left to right).
+    func startCrossing(direction: CGFloat, speed: CGFloat) {
+        crossSpeed = direction * speed
+        // Face the way it is going.
+        xScale = direction >= 0 ? 1 : -1
+    }
+
+    /// True once the obstacle has left the board and can be recycled.
+    func isOffBoard(_ playRect: CGRect) -> Bool {
+        if obstacleType == .cutter {
+            let margin = Self.cutterSize.width
+            return position.x < playRect.minX - margin || position.x > playRect.maxX + margin
+        }
+        return position.y < playRect.minY - 40
+    }
+
     /// Call once after adding to the scene.
     func startFalling(in playWidth: CGFloat) {
         guard obstacleType == .mover else { return }
@@ -100,6 +141,12 @@ final class ObstacleNode: SKNode {
     /// because a move action captures a start position and writes `position` absolutely
     /// each frame, which would overwrite the falling motion applied here.
     func update(dt: TimeInterval, playRect: CGRect) {
+        // Cutters run their lane instead of falling.
+        if obstacleType == .cutter {
+            position.x += crossSpeed * CGFloat(dt)
+            return
+        }
+
         position.y -= fallSpeed * CGFloat(dt)
 
         guard obstacleType == .mover, driftSpeed != 0 else { return }
@@ -129,6 +176,13 @@ final class ObstacleNode: SKNode {
                 width: Self.moverSize.width,
                 height: Self.moverSize.height
             )))
+        case .cutter:
+            return ObstacleDescriptor(id: hash, shape: .rect(CGRect(
+                x: pos.x - Self.cutterSize.width / 2,
+                y: pos.y - Self.cutterSize.height / 2,
+                width: Self.cutterSize.width,
+                height: Self.cutterSize.height
+            )), severs: true)
         }
     }
 }

@@ -43,7 +43,7 @@ final class DrawingEngine {
 
         // 2. Obstacle collision — test the whole proposed segment, not just its
         //    endpoint, so a fast flick can't tunnel straight through an obstacle.
-        for obs in obstacles where obs.intersectsSegment(from: last, to: newPoint) {
+        for obs in obstacles where !obs.severs && obs.intersectsSegment(from: last, to: newPoint) {
             return .fail(.obstacleHit)
         }
 
@@ -60,9 +60,37 @@ final class DrawingEngine {
     /// check every frame and not only when the player moves.
     func checkTipCollision(obstacles: [ObstacleDescriptor]) -> DrawResult {
         guard let tip = points.last else { return .ok }
-        for obs in obstacles where obs.contains(tip) { return .fail(.obstacleHit) }
+        for obs in obstacles where !obs.severs && obs.contains(tip) { return .fail(.obstacleHit) }
         updateNearMisses(at: tip, obstacles: obstacles)
         return .ok
+    }
+
+    // MARK: - Cutting
+    /// Severs the path wherever `hits` reports a crossing, keeping only the piece still
+    /// attached to the drawing tip and discarding everything beyond the cut.
+    ///
+    /// The last crossing is the one that matters: with several cuts, the only surviving
+    /// piece is the one after the final one, because that is the piece the finger is
+    /// still holding.
+    ///
+    /// `totalDistance` is deliberately left alone — the player really did draw that far,
+    /// and the score is a record of effort. The punishment lands on coverage, which is
+    /// recomputed from `points` and so retracts on its own.
+    @discardableResult
+    func cut(where hits: (CGPoint, CGPoint) -> Bool) -> Bool {
+        guard points.count >= 2 else { return false }
+
+        var lastCutIndex: Int?
+        for i in 0..<(points.count - 1) where hits(points[i], points[i + 1]) {
+            lastCutIndex = i
+        }
+        guard let cut = lastCutIndex else { return false }
+
+        let survivors = Array(points[(cut + 1)...])
+        // Always keep the tip: the finger is still down, and drawing has to continue
+        // from somewhere.
+        points = survivors.isEmpty ? [points[points.count - 1]] : survivors
+        return true
     }
 
     private func updateNearMisses(at point: CGPoint, obstacles: [ObstacleDescriptor]) {
@@ -138,6 +166,8 @@ struct ObstacleDescriptor {
     /// Identity of the originating node, so near-misses can be de-duplicated per obstacle.
     let id: Int
     let shape: Shape
+    /// True for cutters: they sever the line rather than ending the round.
+    var severs: Bool = false
 
     /// Hit zones are padded by the line's half-width plus a small forgiveness margin.
     private static let padding: CGFloat = 6

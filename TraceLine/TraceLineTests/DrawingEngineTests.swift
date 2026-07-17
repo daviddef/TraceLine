@@ -222,3 +222,125 @@ final class DrawingEngineTests: XCTestCase {
         XCTAssertEqual(engine.currentTip, p(10, 10))
     }
 }
+
+/// The Cutter severs the line instead of ending the round: you keep the piece your
+/// finger is still holding and lose everything beyond the cut.
+final class CutterTests: XCTestCase {
+
+    private var engine: DrawingEngine!
+
+    override func setUp() {
+        super.setUp()
+        engine = DrawingEngine()
+    }
+
+    private func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x, y: y) }
+
+    /// A vertical blade at `x`, as a cutter crossing the line would present.
+    private func blade(atX x: CGFloat) -> (CGPoint, CGPoint) -> Bool {
+        { a, b in
+            GeometryHelpers.segmentsIntersect(a, b, CGPoint(x: x, y: -1000), CGPoint(x: x, y: 1000))
+        }
+    }
+
+    private func cutter(_ id: Int, x: CGFloat, y: CGFloat) -> ObstacleDescriptor {
+        ObstacleDescriptor(id: id, shape: .rect(CGRect(x: x - 20, y: y - 8, width: 40, height: 16)),
+                           severs: true)
+    }
+
+    func testCutKeepsThePieceAttachedToTheTip() {
+        engine.begin(at: p(0, 0))
+        for x in stride(from: CGFloat(10), through: 100, by: 10) {
+            XCTAssertEqual(engine.extend(to: p(x, 0), obstacles: []), .ok)
+        }
+        XCTAssertTrue(engine.cut(where: blade(atX: 55)))
+
+        // Everything left of the blade is gone; the tip survives.
+        XCTAssertEqual(engine.currentTip, p(100, 0))
+        XCTAssertTrue(engine.points.allSatisfy { $0.x > 55 })
+    }
+
+    func testCutRetractsCoverage() {
+        let rect = CGRect(x: 0, y: 0, width: 100, height: 100)
+        engine.begin(at: p(5, 50))
+        for x in stride(from: CGFloat(10), through: 95, by: 5) {
+            _ = engine.extend(to: p(x, 50), obstacles: [])
+        }
+        let before = engine.coveragePercent(in: rect, gridSize: 10)
+        engine.cut(where: blade(atX: 50))
+        let after = engine.coveragePercent(in: rect, gridSize: 10)
+
+        // This is the whole mechanic: the punishment lands on the coverage bar, which is
+        // recomputed live from the points. If coverage ever became a cumulative "cells
+        // ever touched" set, a cut would cost nothing and would instead *reward* the
+        // player with a shorter line and more freedom.
+        XCTAssertLessThan(after, before, "cutting the line must give back coverage")
+    }
+
+    func testCutLeavesTheEarnedDistanceAlone() {
+        engine.begin(at: p(0, 0))
+        for x in stride(from: CGFloat(10), through: 100, by: 10) {
+            _ = engine.extend(to: p(x, 0), obstacles: [])
+        }
+        let distance = engine.totalDistance
+        engine.cut(where: blade(atX: 55))
+        XCTAssertEqual(engine.totalDistance, distance, "the player really did draw that far")
+    }
+
+    func testCutFreesTheSpaceToBeRedrawn() {
+        // Box the tip in behind its own path, then cut the wall away.
+        engine.begin(at: p(0, 0))
+        _ = engine.extend(to: p(100, 0), obstacles: [])
+        _ = engine.extend(to: p(100, 100), obstacles: [])
+        _ = engine.extend(to: p(50, 100), obstacles: [])
+        XCTAssertEqual(engine.extend(to: p(50, -50), obstacles: []), .fail(.lineCrossed))
+
+        engine.cut(where: blade(atX: 75))
+        // The severed span is gone, so the move that just crossed is now legal.
+        XCTAssertEqual(engine.extend(to: p(50, -50), obstacles: []), .ok)
+    }
+
+    func testMultipleCutsKeepOnlyTheTipPiece() {
+        engine.begin(at: p(0, 0))
+        for x in stride(from: CGFloat(10), through: 100, by: 10) {
+            _ = engine.extend(to: p(x, 0), obstacles: [])
+        }
+        engine.cut(where: { a, b in
+            self.blade(atX: 25)(a, b) || self.blade(atX: 75)(a, b)
+        })
+        XCTAssertTrue(engine.points.allSatisfy { $0.x > 75 },
+                      "only the piece after the last cut is still held")
+    }
+
+    func testCuttingRightAtTheTipLeavesSomethingToDrawFrom() {
+        engine.begin(at: p(0, 0))
+        _ = engine.extend(to: p(50, 0), obstacles: [])
+        engine.cut(where: blade(atX: 49))
+        XCTAssertGreaterThanOrEqual(engine.pointCount, 1, "the finger is still down")
+        XCTAssertEqual(engine.extend(to: p(50, 60), obstacles: []), .ok)
+    }
+
+    func testACutterDoesNotEndTheRound() {
+        engine.begin(at: p(0, 0))
+        // Drawing straight through a cutter is legal — it costs line, not the round.
+        XCTAssertEqual(engine.extend(to: p(100, 0), obstacles: [cutter(1, x: 50, y: 0)]), .ok)
+    }
+
+    func testACutterDoesNotKillAStationaryTip() {
+        engine.begin(at: p(0, 0))
+        XCTAssertEqual(engine.checkTipCollision(obstacles: [cutter(1, x: 0, y: 0)]), .ok)
+    }
+
+    func testLethalObstaclesStillEndTheRound() {
+        engine.begin(at: p(0, 0))
+        let blocker = ObstacleDescriptor(id: 2, shape: .circle(center: p(50, 0), radius: 14))
+        XCTAssertEqual(engine.extend(to: p(100, 0), obstacles: [blocker]), .fail(.obstacleHit))
+    }
+
+    func testNoCutWhenNothingCrosses() {
+        engine.begin(at: p(0, 0))
+        _ = engine.extend(to: p(100, 0), obstacles: [])
+        XCTAssertFalse(engine.cut(where: blade(atX: 500)))
+        XCTAssertEqual(engine.pointCount, 2)
+    }
+}

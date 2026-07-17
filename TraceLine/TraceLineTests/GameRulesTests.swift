@@ -87,17 +87,47 @@ final class LevelConfigTests: XCTestCase {
         XCTAssertEqual(ids, Array(1...ids.count))
     }
 
-    func testEarlyLevelsTeachTheMechanicWithoutObstacles() {
-        for level in LevelConfig.all.prefix(5) {
-            XCTAssertTrue(level.obstacleTypes.isEmpty,
-                          "level \(level.id) should have no obstacles")
+    /// Level 1 alone teaches the two rules with an empty board. Playtesting (and the
+    /// obstacle schedule in HANDOVER, which contradicts its own level table) says
+    /// obstacles have to arrive almost immediately — with none of them, the optimal
+    /// strategy is a serpentine sweep, which is a drill rather than a game.
+    func testOnlyLevelOneIsObstacleFree() {
+        guard let one = LevelConfig.level(id: 1) else { return XCTFail("level 1 missing") }
+        XCTAssertTrue(one.obstacleTypes.isEmpty, "level 1 should teach on an empty board")
+
+        for level in LevelConfig.all.dropFirst() {
+            XCTAssertFalse(level.obstacleTypes.isEmpty,
+                           "level \(level.id) has nothing in the way")
+            XCTAssertGreaterThan(level.maxObstacles, 0, "level \(level.id)")
         }
     }
 
-    func testObstaclesArriveFromLevelSix() {
-        guard let six = LevelConfig.level(id: 6) else { return XCTFail("level 6 missing") }
-        XCTAssertEqual(six.obstacleTypes, [.blocker])
-        XCTAssertGreaterThan(six.maxObstacles, 0)
+    func testObstaclesArriveByLevelTwo() {
+        guard let two = LevelConfig.level(id: 2) else { return XCTFail("level 2 missing") }
+        XCTAssertEqual(two.obstacleTypes, [.blocker], "the first hazard should be the simplest")
+    }
+
+    func testMovingObstaclesArriveEarly() {
+        let firstMover = LevelConfig.all.first { $0.obstacleTypes.contains(.mover) }
+        XCTAssertNotNil(firstMover)
+        XCTAssertLessThanOrEqual(firstMover?.id ?? 99, 4,
+                                 "movers are the most popular hazard — they cannot wait until level 8")
+    }
+
+    /// Shrinker shipped in v1 fully built, themed and rotating, and never appeared once
+    /// because no level listed it. Nothing else should be dead on arrival.
+    func testEveryObstacleTypeIsActuallyUsed() {
+        for type in ObstacleType.allCases {
+            XCTAssertTrue(LevelConfig.all.contains { $0.obstacleTypes.contains(type) },
+                          "\(type.rawValue) is implemented but no level spawns it")
+        }
+    }
+
+    func testDifficultyRampsMonotonically() {
+        let targets = LevelConfig.all.map(\.targetCoverage)
+        XCTAssertEqual(targets, targets.sorted(), "coverage targets should never go backwards")
+        let times = LevelConfig.all.map(\.timeLimit)
+        XCTAssertEqual(times, times.sorted(by: >), "time limits should never grow")
     }
 
     func testEveryLevelIsInternallySensible() {

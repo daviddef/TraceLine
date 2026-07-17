@@ -14,6 +14,12 @@ enum Haptics {
         SoundHook.play(.win)
     }
 
+    /// The line has just been severed — sharper than a tap, softer than a fail.
+    static func cut() {
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        SoundHook.play(.cut)
+    }
+
     static func tap() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         SoundHook.play(.tap)
@@ -22,7 +28,7 @@ enum Haptics {
 
 /// Placeholder for the v1 sound hooks. No audio assets ship yet.
 enum SoundHook {
-    enum Cue { case tap, fail, win, nearMiss }
+    enum Cue { case tap, fail, win, nearMiss, cut }
     static func play(_ cue: Cue) {
         // Intentionally empty — wire to SKAudioNode / AVAudioPlayer when assets land.
     }
