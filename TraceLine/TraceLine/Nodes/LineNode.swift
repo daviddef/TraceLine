@@ -111,8 +111,13 @@ final class LineNode: SKNode {
     /// sever when it finishes its pass. Showing this while the player draws is what turns
     /// a cut from something the game took into something the player chose to spend.
     /// Pass 0 to clear.
-    func markDoomed(engineCount: Int, color: SKColor) {
-        guard engineCount > 1, renderPoints.count >= 2 else {
+    ///
+    /// `points` is the engine's full-resolution array: the render points are decimated to
+    /// corners, so stopping at the last whole corner would under-report the loss by up to
+    /// a full straight run — on a serpentine, an entire row. The exact cut point is added
+    /// as the final vertex so the warning ends precisely where the blade will.
+    func markDoomed(points: [CGPoint], engineCount: Int, color: SKColor) {
+        guard engineCount > 1, renderPoints.count >= 2, engineCount <= points.count else {
             doomedNode?.path = nil
             return
         }
@@ -122,14 +127,13 @@ final class LineNode: SKNode {
         while last + 1 < renderSource.count && renderSource[last + 1] < engineCount {
             last += 1
         }
-        guard last >= 1 else {
-            doomedNode?.path = nil
-            return
-        }
 
         let path = CGMutablePath()
         path.move(to: renderPoints[0])
-        for i in 1...last { path.addLine(to: renderPoints[i]) }
+        if last >= 1 {
+            for i in 1...last { path.addLine(to: renderPoints[i]) }
+        }
+        path.addLine(to: points[engineCount - 1])
 
         let node = doomedNode ?? makeDoomedNode()
         node.strokeColor = color

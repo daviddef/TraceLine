@@ -27,6 +27,12 @@ struct LevelConfig: Codable, Identifiable {
     let maxObstacles: Int
     let gridSize: Int                // NxN for coverage calculation
 
+    /// Shelters placed on the board. Optional so levels written before they existed
+    /// still decode.
+    let safeZones: [SafeZoneConfig]?
+
+    var zones: [SafeZoneConfig] { safeZones ?? [] }
+
     static func load() -> [LevelConfig] {
         guard let url = Bundle.main.url(forResource: "levels", withExtension: "json"),
               let data = try? Data(contentsOf: url),

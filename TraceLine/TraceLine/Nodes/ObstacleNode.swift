@@ -8,12 +8,25 @@ final class ObstacleNode: SKNode {
     /// Horizontal speed, movers only. Sign is the current direction of travel.
     private var driftSpeed: CGFloat = 0
 
-    /// Cutters only: speed across the board. Sign is the direction of travel.
+    /// Cutters only. Direction is held separately from speed rather than being read off
+    /// its sign: a stationary cutter still faces somewhere, and the lane shadow depends
+    /// on which way it is going, not how fast.
     private(set) var crossSpeed: CGFloat = 0
+    private(set) var crossDirection: CGFloat = 1
 
     /// The lane a cutter runs along, drawn on the board so the hazard is visible before
     /// it arrives. Owned by the scene, not this node — it must not move with the cutter.
     weak var laneNode: SKNode?
+
+    /// Radius used when resolving contact with a safe zone.
+    var hitRadius: CGFloat {
+        switch obstacleType {
+        case .blocker, .shrinker: return Self.circleRadius
+        case .magnetic:           return Self.magneticRadius
+        case .mover:              return Self.moverSize.width / 2
+        case .cutter:             return Self.cutterSize.width / 2
+        }
+    }
 
     // Half-extents of the hit zone, kept in one place so the visual shape and the
     // descriptor handed to DrawingEngine can never drift apart.
@@ -114,28 +127,67 @@ final class ObstacleNode: SKNode {
     // MARK: - Movement
     /// Sends a cutter across the board from `direction` (+1 = left to right).
     func startCrossing(direction: CGFloat, speed: CGFloat) {
-        crossSpeed = direction * speed
-        // Face the way it is going.
-        xScale = direction >= 0 ? 1 : -1
+        crossDirection = direction >= 0 ? 1 : -1
+        crossSpeed = abs(speed)
+        xScale = crossDirection            // face the way it is going
     }
 
     /// The stretch of lane a cutter has yet to sweep — everything it can still take.
     /// Lane behind it is already spent, so a line crossing there is safe.
-    func remainingSweep(in playRect: CGRect) -> CGRect? {
+    func remainingSweep(in playRect: CGRect, zones: [SafeZone] = []) -> CGRect? {
         guard obstacleType == .cutter else { return nil }
         let halfW = Self.cutterSize.width / 2
-        let leadingEdge = position.x + (crossSpeed >= 0 ? halfW : -halfW)
-        let minX = crossSpeed >= 0 ? leadingEdge : playRect.minX - halfW
-        let maxX = crossSpeed >= 0 ? playRect.maxX + halfW : leadingEdge
+        let halfH = Self.cutterSize.height / 2
+        let goingRight = crossDirection >= 0
+        let leadingEdge = position.x + (goingRight ? halfW : -halfW)
+        var minX = goingRight ? leadingEdge : playRect.minX - halfW
+        var maxX = goingRight ? playRect.maxX + halfW : leadingEdge
+
+        // A zone straddling the lane stops the cutter dead, so everything past it is out
+        // of reach. This is what makes a shelter cast a shadow — and the doomed-tail
+        // preview reads the same sweep, so it shows the shadow with no extra work.
+        for zone in zones {
+            guard let block = zone.laneBlock(atY: position.y, halfHeight: halfH) else { continue }
+            if goingRight {
+                if block.lowerBound > leadingEdge { maxX = min(maxX, block.lowerBound) }
+            } else {
+                if block.upperBound < leadingEdge { minX = max(minX, block.upperBound) }
+            }
+        }
+
         guard maxX > minX else { return nil }
-        return CGRect(x: minX, y: position.y - Self.cutterSize.height / 2,
-                      width: maxX - minX, height: Self.cutterSize.height)
+        return CGRect(x: minX, y: position.y - halfH, width: maxX - minX, height: Self.cutterSize.height)
+    }
+
+    /// Bounces the obstacle off any shelter it has run into.
+    func rebound(off zones: [SafeZone]) {
+        for zone in zones {
+            let delta = CGPoint(x: position.x - zone.center.x, y: position.y - zone.center.y)
+            let distance = (delta.x * delta.x + delta.y * delta.y).squareRoot()
+            let minimum = zone.radius + hitRadius
+            guard distance < minimum, distance > 0.001 else { continue }
+
+            let normal = CGPoint(x: delta.x / distance, y: delta.y / distance)
+            position = CGPoint(x: zone.center.x + normal.x * minimum,
+                               y: zone.center.y + normal.y * minimum)
+
+            if obstacleType == .cutter {
+                // Reverse along the lane rather than deflecting off it: a cutter that
+                // left its telegraphed track would be exactly the unfair surprise the
+                // lane exists to prevent.
+                crossDirection = -crossDirection
+                xScale = crossDirection
+            } else {
+                // Slide around the bubble.
+                driftSpeed = normal.x * max(abs(fallSpeed), 40) * 0.9
+            }
+        }
     }
 
     /// True once the obstacle has left the board and can be recycled.
     func isOffBoard(_ playRect: CGRect) -> Bool {
         if obstacleType == .cutter {
-            let margin = Self.cutterSize.width
+            let margin = Self.cutterSize.width * 1.5
             return position.x < playRect.minX - margin || position.x > playRect.maxX + margin
         }
         return position.y < playRect.minY - 40
@@ -156,15 +208,15 @@ final class ObstacleNode: SKNode {
     func update(dt: TimeInterval, playRect: CGRect) {
         // Cutters run their lane instead of falling.
         if obstacleType == .cutter {
-            position.x += crossSpeed * CGFloat(dt)
+            position.x += crossDirection * crossSpeed * CGFloat(dt)
             return
         }
 
         position.y -= fallSpeed * CGFloat(dt)
 
-        guard obstacleType == .mover, driftSpeed != 0 else { return }
+        guard driftSpeed != 0 else { return }
         position.x += driftSpeed * CGFloat(dt)
-        let halfWidth = Self.moverSize.width / 2
+        let halfWidth = hitRadius
         if position.x - halfWidth < playRect.minX {
             position.x = playRect.minX + halfWidth
             driftSpeed = abs(driftSpeed)

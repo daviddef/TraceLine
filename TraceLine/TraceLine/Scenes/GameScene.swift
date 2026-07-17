@@ -26,6 +26,9 @@ final class GameScene: SKScene {
     /// Two at once is already busy: each crosses the whole board.
     private static let maxConcurrentCutters = 2
 
+    /// Shelters on this board, resolved from the level's normalised config.
+    private var safeZones: [SafeZone] = []
+
     // MARK: - Play area
     private var playRect: CGRect = .zero
 
@@ -173,6 +176,13 @@ final class GameScene: SKScene {
     private func setupScene() {
         backgroundColor = theme.background
         addChild(GridNode(theme: theme, playRect: playRect, gridSize: levelConfig.gridSize))
+
+        safeZones = levelConfig.zones.map { $0.resolved(in: playRect) }
+        for zone in safeZones {
+            let node = SafeZoneNode(zone: zone, theme: theme)
+            node.zPosition = 2      // above the grid, below the line and the hazards
+            addChild(node)
+        }
         lineNode = LineNode(theme: theme)
         lineNode.zPosition = 10
         addChild(lineNode)
@@ -196,6 +206,7 @@ final class GameScene: SKScene {
         // Obstacles
         for obs in obstacleNodes {
             obs.update(dt: dt, playRect: playRect)
+            obs.rebound(off: safeZones)
             if obs.isOffBoard(playRect) { recycleObstacle(obs) }
         }
 
@@ -301,7 +312,9 @@ final class GameScene: SKScene {
         var didCut = false
         for cutter in cutters {
             let descriptor = cutter.descriptor()
-            if drawingEngine.cut(where: { descriptor.intersectsSegment(from: $0, to: $1) }) {
+            if drawingEngine.cut(where: { a, b in
+                descriptor.intersectsSegment(from: a, to: b) && !isSheltered(from: a, to: b)
+            }) {
                 didCut = true
             }
         }
@@ -315,18 +328,24 @@ final class GameScene: SKScene {
     /// draws. Without it the cut is the first news you get, and losing half a board with
     /// no warning reads as the game stealing from you rather than as a bad bet.
     /// The lane was always visible; the *consequence* was not.
+    /// Line tucked inside a shelter is out of reach. Only a segment wholly inside counts:
+    /// anything poking out is exposed, and the cut and the warning must agree on that.
+    private func isSheltered(from a: CGPoint, to b: CGPoint) -> Bool {
+        safeZones.contains { $0.shelters(from: a, to: b) }
+    }
+
     private func updateDoomedTail() {
         var doomed = 0
         for cutter in obstacleNodes where cutter.obstacleType.severs {
-            guard let sweep = cutter.remainingSweep(in: playRect) else { continue }
+            guard let sweep = cutter.remainingSweep(in: playRect, zones: safeZones) else { continue }
             // The same hit test the cut uses, over the lane the cutter has yet to
             // travel — so the warning and the cut can never disagree.
             let region = ObstacleDescriptor(id: cutter.hash, shape: .rect(sweep), severs: true)
-            doomed = max(doomed, drawingEngine.doomedCount(where: {
-                region.intersectsSegment(from: $0, to: $1)
+            doomed = max(doomed, drawingEngine.doomedCount(where: { a, b in
+                region.intersectsSegment(from: a, to: b) && !self.isSheltered(from: a, to: b)
             }))
         }
-        lineNode.markDoomed(engineCount: doomed,
+        lineNode.markDoomed(points: drawingEngine.points, engineCount: doomed,
                             color: theme.obstacleColors[ObstacleType.cutter.themeIndex])
     }
 
