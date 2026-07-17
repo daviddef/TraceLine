@@ -9,6 +9,9 @@ import SpriteKit
 final class LevelSelectScene: SKScene {
 
     private let theme: Theme
+    /// Which world's trail is on screen. One world, one trail — twenty nodes on a single
+    /// wave would be a list again.
+    private var worldID: Int
     private let nodeRadius: CGFloat = 24
     /// Fitted to the screen rather than fixed, so the trail fills the board on a big
     /// phone instead of stopping two-thirds down.
@@ -18,8 +21,9 @@ final class LevelSelectScene: SKScene {
     }
     private var amplitude: CGFloat { min(86, size.width * 0.2) }
 
-    init(theme: Theme, size: CGSize) {
+    init(theme: Theme, size: CGSize, worldID: Int? = nil) {
         self.theme = theme
+        self.worldID = worldID ?? PlayerProgress.shared.furthestUnlockedWorld
         super.init(size: size)
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scaleMode = .resizeFill
@@ -27,7 +31,8 @@ final class LevelSelectScene: SKScene {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used — scenes are built in code") }
 
-    private var levels: [LevelConfig] { LevelConfig.all }
+    private var world: WorldConfig? { WorldConfig.world(id: worldID) }
+    private var levels: [LevelConfig] { world?.levels ?? [] }
 
     /// How many levels are cleared — where the drawn part of the trail ends.
     private var clearedCount: Int {
@@ -47,7 +52,10 @@ final class LevelSelectScene: SKScene {
                        y: topY - t * spacing)
     }
 
-    override func didMove(to view: SKView) {
+    override func didMove(to view: SKView) { rebuild() }
+
+    private func rebuild() {
+        removeAllChildren()
         backgroundColor = theme.background
         addHeader()
         addTrail()
@@ -67,7 +75,7 @@ final class LevelSelectScene: SKScene {
         addChild(back)
 
         let title = SKLabelNode(fontNamed: Fonts.display(for: theme))
-        title.text = "World 1 — The Grid"
+        title.text = world?.displayTitle ?? "World \(worldID)"
         title.fontSize = 24
         title.fontColor = theme.hudTextColor
         title.position = CGPoint(x: 0, y: size.height / 2 - 92)
@@ -80,6 +88,26 @@ final class LevelSelectScene: SKScene {
         progress.fontColor = theme.hudTextColor.withAlphaComponent(0.5)
         progress.position = CGPoint(x: 0, y: size.height / 2 - 128)
         addChild(progress)
+
+        // Worlds you have not opened are still worth seeing — the point of a locked door
+        // is knowing it is there.
+        addWorldArrow(direction: -1, enabled: WorldConfig.world(id: worldID - 1) != nil)
+        addWorldArrow(direction: 1, enabled: WorldConfig.world(id: worldID + 1) != nil)
+    }
+
+    private func addWorldArrow(direction: Int, enabled: Bool) {
+        guard enabled else { return }
+        let arrow = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        arrow.text = direction < 0 ? "‹" : "›"
+        arrow.fontSize = 28
+        arrow.fontColor = theme.hudTextColor.withAlphaComponent(0.55)
+        arrow.verticalAlignmentMode = .center
+        // Inboard, beside the progress line: out at the edge it sat directly under the
+        // back button and read as a second one.
+        arrow.position = CGPoint(x: CGFloat(direction) * (size.width / 2 - 96),
+                                 y: size.height / 2 - 128)
+        arrow.name = direction < 0 ? "world_prev" : "world_next"
+        addChild(arrow)
     }
 
     /// One continuous line through every level: drawn where the player has been, faint
@@ -150,6 +178,7 @@ final class LevelSelectScene: SKScene {
 
     private func levelNode(level: LevelConfig, at position: CGPoint) -> SKNode {
         let unlocked = PlayerProgress.shared.isUnlocked(level.id)
+            && PlayerProgress.shared.isWorldUnlocked(level.world)
         let stars = PlayerProgress.shared.stars(for: level.id)
         let isNext = unlocked && stars == 0
         let name = unlocked ? "level_\(level.id)" : "locked"
@@ -221,6 +250,15 @@ final class LevelSelectScene: SKScene {
             Haptics.tap()
             view?.presentScene(HomeScene(theme: theme, size: size),
                                transition: .fade(withDuration: 0.3))
+            return
+        }
+
+        if name == "world_prev" || name == "world_next" {
+            let next = worldID + (name == "world_next" ? 1 : -1)
+            guard WorldConfig.world(id: next) != nil else { return }
+            Haptics.tap()
+            worldID = next
+            rebuild()
             return
         }
 

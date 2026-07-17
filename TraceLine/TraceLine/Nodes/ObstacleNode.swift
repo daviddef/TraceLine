@@ -35,6 +35,16 @@ final class ObstacleNode: SKNode {
     private static let moverSize = CGSize(width: 50, height: 12)
     static let cutterSize = CGSize(width: 46, height: 18)
 
+    /// How far a magnet's field reaches, and how hard it bends the line per point.
+    /// The field ring is drawn at exactly this radius — a pull that reached beyond what
+    /// the player can see would be the game cheating.
+    static let magneticFieldRadius: CGFloat = 78
+    /// Max deflection at the core, falling to zero at the field's edge. Tuned by looking
+    /// at it: at 3.2 the bend was under 2pt — thinner than the line itself, so the field
+    /// looked like decoration. At 18 the line visibly leans, and anything inside roughly
+    /// 28pt gets dragged into the core, which is the danger the ring is warning about.
+    static let magneticPull: CGFloat = 18
+
     // MARK: - Init
     init(type: ObstacleType, theme: Theme) {
         self.obstacleType = type
@@ -77,6 +87,18 @@ final class ObstacleNode: SKNode {
             ring.run(.repeatForever(.sequence([
                 .fadeAlpha(to: 0.1, duration: 0.6),
                 .fadeAlpha(to: 0.5, duration: 0.6),
+            ])))
+
+            // The field itself, drawn at the exact radius it acts over.
+            let field = SKShapeNode(circleOfRadius: Self.magneticFieldRadius)
+            field.fillColor = color.withAlphaComponent(0.05)
+            field.strokeColor = color.withAlphaComponent(0.3)
+            field.lineWidth = 1
+            field.zPosition = -1
+            addChild(field)
+            field.run(.repeatForever(.sequence([
+                .group([.scale(to: 1.05, duration: 1.1), .fadeAlpha(to: 0.45, duration: 1.1)]),
+                .group([.scale(to: 0.97, duration: 1.1), .fadeAlpha(to: 0.9, duration: 1.1)]),
             ])))
 
         case .cutter:
@@ -233,7 +255,8 @@ final class ObstacleNode: SKNode {
         case .blocker, .shrinker:
             return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.circleRadius))
         case .magnetic:
-            return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.magneticRadius))
+            return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.magneticRadius),
+                                      pull: Self.magneticPull, pullRadius: Self.magneticFieldRadius)
         case .mover:
             return ObstacleDescriptor(id: hash, shape: .rect(CGRect(
                 x: pos.x - Self.moverSize.width / 2,

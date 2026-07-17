@@ -88,16 +88,36 @@ final class GameScene: SKScene {
             goingRight.toggle()
         }
 
+        // A magnet goes down *before* the line is drawn, and the line is then drawn with
+        // it in play, so what you see is genuinely bent rather than a straight path with a
+        // field pasted next to it. It is placed off the serpentine's turns so the pull
+        // bends the run without dragging it into the core.
+        if levelConfig.obstacleTypes.contains(.magnetic) {
+            let magnet = ObstacleNode(type: .magnetic, theme: theme)
+            // Between two passes, not on one. With eight rows the midline falls exactly
+            // between rows, so any half-spacing offset lands the magnet *on* a row and the
+            // line simply draws into it.
+            magnet.position = CGPoint(x: playRect.midX + playRect.width * 0.18,
+                                      y: playRect.midY)
+            magnet.fallSpeed = 0
+            magnet.zPosition = 5
+            obstacleNodes.append(magnet)
+            addChild(magnet)
+        }
+
         guard let start = corners.first else { return }
         drawingEngine.begin(at: start)
-        // Walk between corners in small steps, the way real touch events arrive.
-        for i in 0..<(corners.count - 1) {
+        // Walk between corners in small steps, the way real touch events arrive. If the
+        // engine refuses a point, stop drawing and render what we have — bailing out of
+        // the whole routine would skip the render and show an empty board.
+        let live = obstacleDescriptors()
+        walk: for i in 0..<(corners.count - 1) {
             let a = corners[i], b = corners[i + 1]
             let steps = max(1, Int(GeometryHelpers.distance(a, b) / 6))
             for s in 1...steps {
                 let t = CGFloat(s) / CGFloat(steps)
                 let p = CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
-                guard drawingEngine.extend(to: p, obstacles: []) == .ok else { return }
+                if drawingEngine.extend(to: p, obstacles: live) != .ok { break walk }
             }
         }
 
@@ -130,8 +150,9 @@ final class GameScene: SKScene {
         // Pose the rest in the gaps between passes. A *lethal* obstacle touching the line
         // would mean the round had already ended, so a screenshot showing that misstates
         // the rules — keep those clear of the drawn path.
-        var placed: [CGPoint] = []
-        for type in levelConfig.obstacleTypes.prefix(2) where !type.severs {
+        // Seed with the magnet so nothing else is posed on top of it or inside its field.
+        var placed: [CGPoint] = obstacleNodes.filter { $0.obstacleType == .magnetic }.map(\.position)
+        for type in levelConfig.obstacleTypes.prefix(3) where !type.severs && type != .magnetic {
             guard let spot = clearSpot(awayFrom: placed) else { continue }
             let obs = ObstacleNode(type: type, theme: theme)
             obs.position = spot
@@ -569,7 +590,7 @@ extension GameScene: GameStateMachineDelegate {
         case "resume_button":
             stateMachine.transition(to: .idle)
         case "levels_button":
-            let scene = LevelSelectScene(theme: theme, size: size)
+            let scene = LevelSelectScene(theme: theme, size: size, worldID: levelConfig.world)
             view?.presentScene(scene, transition: .fade(withDuration: 0.3))
         default:
             break

@@ -231,6 +231,18 @@ Worth prototyping the cheap one first and seeing whether the idea has legs.
 
 ---
 
+## World 3
+
+Worlds are data now: `worlds.json` plus a `world` on each level, one trail per world.
+A third world is content, not surgery — but a test fails if it introduces no hazard the
+previous world did not have, because "the last world with bigger numbers" is precisely
+what the research says will not hold anyone.
+
+The obvious candidate is the **Fuse** (Volfied, 1989): a hazard that ignites your line and
+burns it toward your finger while you race for a shelter. It was blocked on there being
+anywhere to run — safe zones fixed that. It is the last big idea on the list with 45 years
+of proof behind it.
+
 ## Later
 
 - **Daily seeded challenge.** One deterministic board per day, shared globally —

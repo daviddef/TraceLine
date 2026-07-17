@@ -132,7 +132,7 @@ final class WinScene: SKScene {
             let scene = GameScene(levelConfig: next, theme: theme, size: size)
             view?.presentScene(scene, transition: .fade(withDuration: 0.3))
         case "levels_button":
-            let scene = LevelSelectScene(theme: theme, size: size)
+            let scene = LevelSelectScene(theme: theme, size: size, worldID: levelConfig.world)
             view?.presentScene(scene, transition: .fade(withDuration: 0.3))
         default:
             break

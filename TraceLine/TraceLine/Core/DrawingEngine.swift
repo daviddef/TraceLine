@@ -33,8 +33,13 @@ final class DrawingEngine {
 
     // MARK: - Extend line
     /// Call from touchesMoved. If the result is not `.ok`, stop drawing and fail the round.
-    func extend(to newPoint: CGPoint, obstacles: [ObstacleDescriptor]) -> DrawResult {
+    ///
+    /// The point the player asks for is not necessarily the point that gets drawn: magnets
+    /// bend it on the way in. Everything downstream — crossing, collision, coverage —
+    /// uses the deflected point, because that is where the line actually went.
+    func extend(to requested: CGPoint, obstacles: [ObstacleDescriptor]) -> DrawResult {
         guard let last = points.last else { return .ok }
+        let newPoint = pulled(requested, obstacles: obstacles)
         let d = GeometryHelpers.distance(last, newPoint)
         guard d >= MIN_POINT_SPACING else { return .ok }
 
@@ -63,6 +68,27 @@ final class DrawingEngine {
         for obs in obstacles where !obs.severs && obs.contains(tip) { return .fail(.obstacleHit) }
         updateNearMisses(at: tip, obstacles: obstacles)
         return .ok
+    }
+
+    /// Bends a point toward any magnet in range. Strongest up close and zero at the edge
+    /// of the field, so the pull has a visible boundary rather than reaching out of
+    /// nowhere.
+    ///
+    /// This is what makes a magnet dangerous: it can drag the line into the magnet itself,
+    /// or — far worse — into the path you have already drawn, which is a crossing and ends
+    /// the round. Your own line remains the real hazard.
+    func pulled(_ point: CGPoint, obstacles: [ObstacleDescriptor]) -> CGPoint {
+        var p = point
+        for obs in obstacles where obs.pull > 0 && obs.pullRadius > 0 {
+            guard case .circle(let centre, _) = obs.shape else { continue }
+            let d = GeometryHelpers.distance(p, centre)
+            guard d < obs.pullRadius, d > 0.001 else { continue }
+            let falloff = 1 - d / obs.pullRadius
+            let step = min(obs.pull * falloff, d)      // never overshoot the centre
+            p = CGPoint(x: p.x + (centre.x - p.x) / d * step,
+                        y: p.y + (centre.y - p.y) / d * step)
+        }
+        return p
     }
 
     // MARK: - Cutting
@@ -181,6 +207,11 @@ struct ObstacleDescriptor {
     let shape: Shape
     /// True for cutters: they sever the line rather than ending the round.
     var severs: Bool = false
+
+    /// Magnets only: how hard the line is bent per recorded point, and how far the field
+    /// reaches. Zero for everything else.
+    var pull: CGFloat = 0
+    var pullRadius: CGFloat = 0
 
     /// Hit zones are padded by the line's half-width plus a small forgiveness margin.
     private static let padding: CGFloat = 6

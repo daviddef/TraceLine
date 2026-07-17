@@ -123,11 +123,26 @@ final class LevelConfigTests: XCTestCase {
         }
     }
 
-    func testDifficultyRampsMonotonically() {
-        let targets = LevelConfig.all.map(\.targetCoverage)
-        XCTAssertEqual(targets, targets.sorted(), "coverage targets should never go backwards")
-        let times = LevelConfig.all.map(\.timeLimit)
-        XCTAssertEqual(times, times.sorted(by: >), "time limits should never grow")
+    /// Difficulty ramps *within* a world, not across the whole game. A new world opens
+    /// with a new idea, and a new idea has to be taught before it is combined — so World 2
+    /// deliberately starts gentler than World 1 ended.
+    func testDifficultyRampsMonotonicallyWithinEachWorld() {
+        for world in WorldConfig.all {
+            let targets = world.levels.map(\.targetCoverage)
+            XCTAssertEqual(targets, targets.sorted(),
+                           "world \(world.id): coverage targets should never go backwards")
+            let times = world.levels.map(\.timeLimit)
+            XCTAssertEqual(times, times.sorted(by: >),
+                           "world \(world.id): time limits should never grow")
+        }
+    }
+
+    func testEachWorldOpensGentlerThanThePreviousOneEnded() {
+        for (previous, next) in zip(WorldConfig.all, WorldConfig.all.dropFirst()) {
+            guard let ended = previous.levels.last, let opens = next.levels.first else { continue }
+            XCTAssertLessThan(opens.targetCoverage, ended.targetCoverage,
+                              "world \(next.id) should breathe before it bites")
+        }
     }
 
     func testEveryLevelIsInternallySensible() {

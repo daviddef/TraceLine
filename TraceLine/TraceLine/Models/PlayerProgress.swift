@@ -37,6 +37,20 @@ final class PlayerProgress {
         return stars(for: levelId - 1) >= 1
     }
 
+    /// A world opens when the previous world's final level is cleared. World 1 is always
+    /// open.
+    func isWorldUnlocked(_ worldId: Int) -> Bool {
+        guard worldId > 1 else { return true }
+        guard let previous = WorldConfig.world(id: worldId - 1),
+              let final = previous.finalLevelID else { return false }
+        return stars(for: final) >= 1
+    }
+
+    /// The furthest world the player can actually play — where "Play" should land them.
+    var furthestUnlockedWorld: Int {
+        WorldConfig.all.last { isWorldUnlocked($0.id) }?.id ?? 1
+    }
+
     // MARK: - Purchases
     // Written only by Store, which is inactive in v1, so these stay false.
 
