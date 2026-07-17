@@ -19,6 +19,12 @@ enum ObstacleType: String, Codable, CaseIterable {
 
 struct LevelConfig: Codable, Identifiable {
     let id: Int
+
+    /// "Gridlock" tells you what you are in for; "8" does not. Optional so older data
+    /// still decodes.
+    let name: String?
+
+    var displayName: String { name ?? "Level \(id)" }
     let world: Int
     let timeLimit: TimeInterval
     let targetCoverage: Float        // e.g. 0.65 = 65% of grid cells

@@ -74,6 +74,17 @@ final class PlayerProgress {
         }
     }
 
+    /// Debug helper — marks levels 1...count as cleared, for inspecting a mid-journey
+    /// map without playing there.
+    func seedProgress(upTo count: Int) {
+        for level in LevelConfig.all where level.id <= count {
+            let stars = [3, 2, 3, 1, 2][(level.id - 1) % 5]
+            defaults.set(stars, forKey: "level_\(level.id)_stars")
+            defaults.set(level.id * 1000, forKey: "level_\(level.id)_score")
+        }
+        defaults.set(4200, forKey: "global_highscore")
+    }
+
     /// Debug helper — wipes all saved progress.
     func reset() {
         for level in LevelConfig.all {

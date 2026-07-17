@@ -24,6 +24,9 @@ final class LineNode: SKNode {
     /// Drawn over the stretch of line a cutter is going to take.
     private var doomedNode: SKShapeNode?
 
+    /// Clay only: an offset copy under the line, which reads as a bevel.
+    private var bevelNode: SKShapeNode?
+
     /// Max perpendicular deviation (pt) before a point earns its own vertex.
     private static let simplifyTolerance: CGFloat = 0.6
 
@@ -44,6 +47,18 @@ final class LineNode: SKNode {
         shapeNode.alpha       = theme.lineAlpha
         shapeNode.isAntialiased = !theme.pixelated
         addChild(shapeNode)
+
+        if theme.lineBevelOffset != .zero {
+            let bevel = SKShapeNode()
+            bevel.strokeColor = theme.lineShadowColor
+            bevel.lineWidth = theme.lineWidth
+            bevel.lineCap = theme.lineCap
+            bevel.lineJoin = .round
+            bevel.fillColor = .clear
+            bevel.position = CGPoint(x: theme.lineBevelOffset.dx, y: theme.lineBevelOffset.dy)
+            insertChild(bevel, at: 0)
+            bevelNode = bevel
+        }
 
         if theme.lineGlowWidth > 0 {
             let glow = SKShapeNode()
@@ -86,6 +101,7 @@ final class LineNode: SKNode {
         let snapshot = path.copy()
         shapeNode.path = snapshot
         glowNode?.path = snapshot
+        bevelNode?.path = snapshot
     }
 
     /// Extends the drawn polyline, dropping the previous point when it turns out to sit
@@ -179,6 +195,7 @@ final class LineNode: SKNode {
         doomedNode?.path = nil
         shapeNode.path = nil
         glowNode?.path = nil
+        bevelNode?.path = nil
         shapeNode.alpha = theme.lineAlpha
         shapeNode.strokeColor = theme.lineColor
         glowNode?.strokeColor = theme.lineShadowColor

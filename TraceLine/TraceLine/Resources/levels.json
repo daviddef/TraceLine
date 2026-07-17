@@ -1,30 +1,225 @@
 [
-  { "id":1,  "world":1, "timeLimit":60, "targetCoverage":0.40, "obstacleTypes":[],
-    "spawnInterval":99, "maxObstacles":0, "gridSize":15 },
-  { "id":2,  "world":1, "timeLimit":60, "targetCoverage":0.45, "obstacleTypes":["blocker"],
-    "spawnInterval":5.0, "maxObstacles":2, "gridSize":15 },
-  { "id":3,  "world":1, "timeLimit":55, "targetCoverage":0.50, "obstacleTypes":["blocker"],
-    "spawnInterval":4.0, "maxObstacles":3, "gridSize":15,
-    "safeZones":[ {"x":0.5, "y":0.55, "radius":0.16} ] },
-  { "id":4,  "world":1, "timeLimit":55, "targetCoverage":0.50, "obstacleTypes":["blocker","mover"],
-    "spawnInterval":4.0, "maxObstacles":3, "gridSize":15,
-    "safeZones":[ {"x":0.28, "y":0.62, "radius":0.14}, {"x":0.74, "y":0.3, "radius":0.13} ] },
-  { "id":5,  "world":1, "timeLimit":55, "targetCoverage":0.55, "obstacleTypes":["blocker","mover"],
-    "spawnInterval":3.5, "maxObstacles":4, "gridSize":18,
-    "safeZones":[ {"x":0.3, "y":0.28, "radius":0.13}, {"x":0.7, "y":0.68, "radius":0.13} ] },
-  { "id":6,  "world":1, "timeLimit":50, "targetCoverage":0.55, "obstacleTypes":["blocker","cutter"],
-    "spawnInterval":3.5, "maxObstacles":4, "gridSize":18,
-    "safeZones":[ {"x":0.5, "y":0.5, "radius":0.15} ] },
-  { "id":7,  "world":1, "timeLimit":50, "targetCoverage":0.60, "obstacleTypes":["blocker","mover","cutter"],
-    "spawnInterval":3.0, "maxObstacles":4, "gridSize":18,
-    "safeZones":[ {"x":0.24, "y":0.4, "radius":0.13}, {"x":0.76, "y":0.66, "radius":0.13} ] },
-  { "id":8,  "world":1, "timeLimit":50, "targetCoverage":0.60, "obstacleTypes":["blocker","mover","magnetic"],
-    "spawnInterval":3.0, "maxObstacles":5, "gridSize":20,
-    "safeZones":[ {"x":0.5, "y":0.32, "radius":0.12} ] },
-  { "id":9,  "world":1, "timeLimit":45, "targetCoverage":0.65, "obstacleTypes":["blocker","mover","magnetic","cutter"],
-    "spawnInterval":2.5, "maxObstacles":5, "gridSize":20,
-    "safeZones":[ {"x":0.22, "y":0.72, "radius":0.12}, {"x":0.78, "y":0.26, "radius":0.12} ] },
-  { "id":10, "world":1, "timeLimit":45, "targetCoverage":0.65, "obstacleTypes":["blocker","mover","magnetic","cutter","shrinker"],
-    "spawnInterval":2.5, "maxObstacles":5, "gridSize":20,
-    "safeZones":[ {"x":0.5, "y":0.75, "radius":0.11}, {"x":0.5, "y":0.25, "radius":0.11} ] }
+  {
+    "id": 1,
+    "name": "Warm Up",
+    "world": 1,
+    "timeLimit": 60,
+    "targetCoverage": 0.4,
+    "obstacleTypes": [],
+    "spawnInterval": 99,
+    "maxObstacles": 0,
+    "gridSize": 15
+  },
+  {
+    "id": 2,
+    "name": "Company",
+    "world": 1,
+    "timeLimit": 60,
+    "targetCoverage": 0.45,
+    "obstacleTypes": [
+      "blocker"
+    ],
+    "spawnInterval": 5.0,
+    "maxObstacles": 2,
+    "gridSize": 15
+  },
+  {
+    "id": 3,
+    "name": "Shelter",
+    "world": 1,
+    "timeLimit": 55,
+    "targetCoverage": 0.5,
+    "obstacleTypes": [
+      "blocker"
+    ],
+    "spawnInterval": 4.0,
+    "maxObstacles": 3,
+    "gridSize": 15,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.55,
+        "radius": 0.16
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Traffic",
+    "world": 1,
+    "timeLimit": 55,
+    "targetCoverage": 0.5,
+    "obstacleTypes": [
+      "blocker",
+      "mover"
+    ],
+    "spawnInterval": 4.0,
+    "maxObstacles": 3,
+    "gridSize": 15,
+    "safeZones": [
+      {
+        "x": 0.28,
+        "y": 0.62,
+        "radius": 0.14
+      },
+      {
+        "x": 0.74,
+        "y": 0.3,
+        "radius": 0.13
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Rush Hour",
+    "world": 1,
+    "timeLimit": 55,
+    "targetCoverage": 0.55,
+    "obstacleTypes": [
+      "blocker",
+      "mover"
+    ],
+    "spawnInterval": 3.5,
+    "maxObstacles": 4,
+    "gridSize": 18,
+    "safeZones": [
+      {
+        "x": 0.3,
+        "y": 0.28,
+        "radius": 0.13
+      },
+      {
+        "x": 0.7,
+        "y": 0.68,
+        "radius": 0.13
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "The Crossing",
+    "world": 1,
+    "timeLimit": 50,
+    "targetCoverage": 0.55,
+    "obstacleTypes": [
+      "blocker",
+      "cutter"
+    ],
+    "spawnInterval": 3.5,
+    "maxObstacles": 4,
+    "gridSize": 18,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.5,
+        "radius": 0.15
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Crossfire",
+    "world": 1,
+    "timeLimit": 50,
+    "targetCoverage": 0.6,
+    "obstacleTypes": [
+      "blocker",
+      "mover",
+      "cutter"
+    ],
+    "spawnInterval": 3.0,
+    "maxObstacles": 4,
+    "gridSize": 18,
+    "safeZones": [
+      {
+        "x": 0.24,
+        "y": 0.4,
+        "radius": 0.13
+      },
+      {
+        "x": 0.76,
+        "y": 0.66,
+        "radius": 0.13
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Attraction",
+    "world": 1,
+    "timeLimit": 50,
+    "targetCoverage": 0.6,
+    "obstacleTypes": [
+      "blocker",
+      "mover",
+      "magnetic"
+    ],
+    "spawnInterval": 3.0,
+    "maxObstacles": 5,
+    "gridSize": 20,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.32,
+        "radius": 0.12
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Gauntlet",
+    "world": 1,
+    "timeLimit": 45,
+    "targetCoverage": 0.65,
+    "obstacleTypes": [
+      "blocker",
+      "mover",
+      "magnetic",
+      "cutter"
+    ],
+    "spawnInterval": 2.5,
+    "maxObstacles": 5,
+    "gridSize": 20,
+    "safeZones": [
+      {
+        "x": 0.22,
+        "y": 0.72,
+        "radius": 0.12
+      },
+      {
+        "x": 0.78,
+        "y": 0.26,
+        "radius": 0.12
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Gridlock",
+    "world": 1,
+    "timeLimit": 45,
+    "targetCoverage": 0.65,
+    "obstacleTypes": [
+      "blocker",
+      "mover",
+      "magnetic",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 2.5,
+    "maxObstacles": 5,
+    "gridSize": 20,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.75,
+        "radius": 0.11
+      },
+      {
+        "x": 0.5,
+        "y": 0.25,
+        "radius": 0.11
+      }
+    ]
+  }
 ]

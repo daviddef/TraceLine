@@ -18,7 +18,9 @@ final class ScreenshotTests: XCTestCase {
 
     private func launch(_ extraArgs: [String]) {
         app = XCUIApplication()
-        app.launchArguments = ["--unlock-all", "--screenshot"] + extraArgs
+        // Progress is set per shot, not globally: --unlock-all stars every level, which
+        // would erase the level map's whole story.
+        app.launchArguments = ["--screenshot"] + extraArgs
         app.launch()
         Thread.sleep(forTimeInterval: 1.2)
     }
@@ -37,19 +39,21 @@ final class ScreenshotTests: XCTestCase {
     }
 
     func testCaptureStoreScreenshots() {
-        // 1 — Home
-        launch([])
+        // 1 — Home, part-way through so Continue and a best score are both real.
+        launch(["--reset-progress", "--progress", "4"])
         shoot("01-home")
 
-        // 2 — Gameplay, mid-round, with obstacles on the board (level 8).
-        launch(["--demo-path", "--level", "8"])
+        // 2 — Gameplay, mid-round. Level 7 is the fullest board: blockers, movers, a
+        // cutter on its lane with the doomed tail lit up, and two shelters.
+        launch(["--demo-path", "--level", "7"])
         Thread.sleep(forTimeInterval: 1.0)
         shoot("02-gameplay")
 
-        // 3 — Level select
-        launch([])
+        // 3 — Level select, mid-journey: the trail is the story, and a fully-cleared
+        // board would show none of it.
+        launch(["--reset-progress", "--progress", "4"])
         coordinate(sceneX: 0, sceneY: -40).tap()
-        Thread.sleep(forTimeInterval: 1.2)
+        Thread.sleep(forTimeInterval: 1.5)
         shoot("03-levels")
 
         // 4 — Win screen, after the stars have animated in.
@@ -57,8 +61,8 @@ final class ScreenshotTests: XCTestCase {
         Thread.sleep(forTimeInterval: 1.8)
         shoot("04-win")
 
-        // 5 — Themes
-        launch([])
+        // 5 — Themes. Needs every theme unlocked to show all four.
+        launch(["--unlock-all"])
         coordinate(sceneX: 0, sceneY: -176).tap()   // Themes, with Continue present
         Thread.sleep(forTimeInterval: 1.2)
         shoot("05-themes")

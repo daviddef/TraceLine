@@ -29,6 +29,13 @@ final class GameViewController: UIViewController {
         hasPresentedScene = true
 
         #if DEBUG
+        // Force a theme without playing to the unlock: --theme retro
+        if let i = CommandLine.arguments.firstIndex(of: "--theme"),
+           i + 1 < CommandLine.arguments.count,
+           let key = ThemeKey(rawValue: CommandLine.arguments[i + 1]) {
+            PlayerProgress.shared.setTheme(key)
+        }
+
         // Boot straight into a level, for screenshots and for iterating on a specific
         // level without playing up to it: --level 8
         if let i = CommandLine.arguments.firstIndex(of: "--level"),

@@ -24,6 +24,13 @@ struct Theme {
     let lineCap: CGLineCap
     let pixelated: Bool              // retro only
 
+    /// Clay: offset of the shadow copy drawn under the line, which is what gives the
+    /// stroke its raised, pressed-into-the-page bevel. Zero for every other theme.
+    let lineBevelOffset: CGVector
+
+    /// Retro: CRT scanlines over the play area.
+    let scanlines: Bool
+
     // Obstacle style
     let obstacleGlow: Bool           // neon / retro only
 
@@ -48,6 +55,8 @@ struct Theme {
         lineAlpha: 1.0,
         lineCap: .round,
         pixelated: false,
+        lineBevelOffset: .zero,
+        scanlines: false,
         obstacleGlow: true
     )
 
@@ -72,6 +81,8 @@ struct Theme {
         lineAlpha: 1.0,
         lineCap: .round,
         pixelated: false,
+        lineBevelOffset: CGVector(dx: 2.5, dy: -2.5),
+        scanlines: false,
         obstacleGlow: false
     )
 
@@ -96,6 +107,8 @@ struct Theme {
         lineAlpha: 1.0,
         lineCap: .round,
         pixelated: true,
+        lineBevelOffset: .zero,
+        scanlines: true,
         obstacleGlow: true
     )
 
@@ -104,7 +117,7 @@ struct Theme {
         displayName: "Watercolour",
         background: SKColor(hex: "#f0f9ff"),
         lineColor: SKColor(hex: "#06b6d4"),
-        lineShadowColor: SKColor(hex: "#0891b2").withAlphaComponent(0.25),
+        lineShadowColor: SKColor(hex: "#06b6d4").withAlphaComponent(0.45),
         obstacleColors: [
             SKColor(hex: "#a78bfa"),
             SKColor(hex: "#f97316"),
@@ -116,10 +129,12 @@ struct Theme {
         hudAccentColor: SKColor(hex: "#06b6d4"),
         gridColor: SKColor.black.withAlphaComponent(0.04),
         lineWidth: 5,
-        lineGlowWidth: 0,
+        lineGlowWidth: 9,          // bleeds into the page like ink on wet paper
         lineAlpha: 0.85,
         lineCap: .round,
         pixelated: false,
+        lineBevelOffset: .zero,
+        scanlines: false,
         obstacleGlow: false
     )
 

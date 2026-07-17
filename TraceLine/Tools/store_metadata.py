@@ -23,6 +23,9 @@ KEY_ID = os.environ["ASC_KEY_ID"]
 ISSUER = os.environ["ASC_ISSUER_ID"]
 APP_ID = os.environ["APP_ID"]
 SHOTS_DIR = Path(os.environ["SHOTS_DIR"]) if os.environ.get("SHOTS_DIR") else None
+# Screenshots are matched by filename, so re-shooting the same names is a no-op unless
+# the old ones are cleared out first.
+REPLACE_SHOTS = os.environ.get("REPLACE_SHOTS") == "1"
 KEY_PATH = Path.home() / f".appstoreconnect/private_keys/AuthKey_{KEY_ID}.p8"
 BASE = "https://api.appstoreconnect.apple.com/v1"
 
@@ -206,6 +209,11 @@ def upload_screenshots(loc_id):
         set_id = d["data"]["id"]
 
     s, d = call("GET", f"/appScreenshotSets/{set_id}/appScreenshots")
+    if REPLACE_SHOTS:
+        for old in d.get("data", []):
+            call("DELETE", f"/appScreenshots/{old['id']}")
+            print(f"Screenshot {old['attributes'].get('fileName')}: removed")
+        d = {"data": []}
     have = {x["attributes"].get("fileName") for x in d.get("data", [])}
 
     for shot in shots:

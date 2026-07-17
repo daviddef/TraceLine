@@ -192,6 +192,12 @@ final class GameScene: SKScene {
         hudNode = HUDNode(theme: theme, levelConfig: levelConfig, sceneSize: size)
         hudNode.zPosition = 100
         addChild(hudNode)
+
+        if theme.scanlines {
+            let scanlines = ScanlineNode(size: size)
+            scanlines.zPosition = 99   // under the HUD, so the pause button stays hittable
+            addChild(scanlines)
+        }
     }
 
     // MARK: - Main update loop
