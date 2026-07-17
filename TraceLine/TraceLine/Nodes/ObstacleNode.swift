@@ -9,7 +9,7 @@ final class ObstacleNode: SKNode {
     private var driftSpeed: CGFloat = 0
 
     /// Cutters only: speed across the board. Sign is the direction of travel.
-    private var crossSpeed: CGFloat = 0
+    private(set) var crossSpeed: CGFloat = 0
 
     /// The lane a cutter runs along, drawn on the board so the hazard is visible before
     /// it arrives. Owned by the scene, not this node — it must not move with the cutter.
@@ -117,6 +117,19 @@ final class ObstacleNode: SKNode {
         crossSpeed = direction * speed
         // Face the way it is going.
         xScale = direction >= 0 ? 1 : -1
+    }
+
+    /// The stretch of lane a cutter has yet to sweep — everything it can still take.
+    /// Lane behind it is already spent, so a line crossing there is safe.
+    func remainingSweep(in playRect: CGRect) -> CGRect? {
+        guard obstacleType == .cutter else { return nil }
+        let halfW = Self.cutterSize.width / 2
+        let leadingEdge = position.x + (crossSpeed >= 0 ? halfW : -halfW)
+        let minX = crossSpeed >= 0 ? leadingEdge : playRect.minX - halfW
+        let maxX = crossSpeed >= 0 ? playRect.maxX + halfW : leadingEdge
+        guard maxX > minX else { return nil }
+        return CGRect(x: minX, y: position.y - Self.cutterSize.height / 2,
+                      width: maxX - minX, height: Self.cutterSize.height)
     }
 
     /// True once the obstacle has left the board and can be recycled.

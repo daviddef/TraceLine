@@ -16,6 +16,14 @@ final class LineNode: SKNode {
     private var renderPoints: [CGPoint] = []
     private var consumedPointCount = 0
 
+    /// Which engine point each render point came from. Decimation means the two arrays
+    /// do not line up, and the doomed overlay has to be cut at the same place the engine
+    /// will actually sever — otherwise the warning points somewhere the cut doesn't.
+    private var renderSource: [Int] = []
+
+    /// Drawn over the stretch of line a cutter is going to take.
+    private var doomedNode: SKShapeNode?
+
     /// Max perpendicular deviation (pt) before a point earns its own vertex.
     private static let simplifyTolerance: CGFloat = 0.6
 
@@ -61,9 +69,13 @@ final class LineNode: SKNode {
         // A shorter array than last time means a new round — start over.
         if points.count < consumedPointCount {
             renderPoints = []
+            renderSource = []
             consumedPointCount = 0
+            doomedNode?.path = nil
         }
-        for p in points[consumedPointCount...] { appendSimplified(p) }
+        for (offset, p) in points[consumedPointCount...].enumerated() {
+            appendSimplified(p, sourceIndex: consumedPointCount + offset)
+        }
         consumedPointCount = points.count
 
         let path = CGMutablePath()
@@ -78,18 +90,62 @@ final class LineNode: SKNode {
 
     /// Extends the drawn polyline, dropping the previous point when it turns out to sit
     /// on the straight line between its neighbours.
-    private func appendSimplified(_ p: CGPoint) {
+    private func appendSimplified(_ p: CGPoint, sourceIndex: Int) {
         guard renderPoints.count >= 2 else {
             renderPoints.append(p)
+            renderSource.append(sourceIndex)
             return
         }
         let anchor = renderPoints[renderPoints.count - 2]
         let candidate = renderPoints[renderPoints.count - 1]
         if GeometryHelpers.distanceToSegment(candidate, anchor, p) < Self.simplifyTolerance {
             renderPoints[renderPoints.count - 1] = p   // straight run — extend it
+            renderSource[renderSource.count - 1] = sourceIndex
         } else {
             renderPoints.append(p)                     // a real corner
+            renderSource.append(sourceIndex)
         }
+    }
+
+    /// Highlights the leading `engineCount` points as doomed — the stretch a cutter will
+    /// sever when it finishes its pass. Showing this while the player draws is what turns
+    /// a cut from something the game took into something the player chose to spend.
+    /// Pass 0 to clear.
+    func markDoomed(engineCount: Int, color: SKColor) {
+        guard engineCount > 1, renderPoints.count >= 2 else {
+            doomedNode?.path = nil
+            return
+        }
+
+        // Last render point still inside the doomed stretch.
+        var last = 0
+        while last + 1 < renderSource.count && renderSource[last + 1] < engineCount {
+            last += 1
+        }
+        guard last >= 1 else {
+            doomedNode?.path = nil
+            return
+        }
+
+        let path = CGMutablePath()
+        path.move(to: renderPoints[0])
+        for i in 1...last { path.addLine(to: renderPoints[i]) }
+
+        let node = doomedNode ?? makeDoomedNode()
+        node.strokeColor = color
+        node.path = path.copy(dashingWithPhase: 0, lengths: [7, 5])
+    }
+
+    private func makeDoomedNode() -> SKShapeNode {
+        let node = SKShapeNode()
+        node.lineWidth = theme.lineWidth + 2
+        node.lineCap = .butt
+        node.fillColor = .clear
+        node.alpha = 0.9
+        node.zPosition = 1          // over the line, under nothing else
+        addChild(node)
+        doomedNode = node
+        return node
     }
 
     /// Flash red on fail, then fade out.
@@ -101,6 +157,7 @@ final class LineNode: SKNode {
         shapeNode.strokeColor = failColor
         glowNode?.strokeColor = failColor
 
+        doomedNode?.path = nil
         let flash = SKAction.sequence([
             .scale(to: 1.04, duration: 0.08),
             .scale(to: 1.0, duration: 0.08),
@@ -113,7 +170,9 @@ final class LineNode: SKNode {
     func reset() {
         isFailing = false
         renderPoints = []
+        renderSource = []
         consumedPointCount = 0
+        doomedNode?.path = nil
         shapeNode.path = nil
         glowNode?.path = nil
         shapeNode.alpha = theme.lineAlpha

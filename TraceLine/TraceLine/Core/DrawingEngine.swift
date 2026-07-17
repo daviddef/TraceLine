@@ -76,15 +76,28 @@ final class DrawingEngine {
     /// `totalDistance` is deliberately left alone — the player really did draw that far,
     /// and the score is a record of effort. The punishment lands on coverage, which is
     /// recomputed from `points` and so retracts on its own.
+    /// Index of the last segment `hits` reports a crossing on, or nil for no crossing.
+    ///
+    /// Shared by `cut` and by the doomed-tail preview, so what the player is warned
+    /// about and what they actually lose are computed the same way and cannot drift.
+    func severIndex(where hits: (CGPoint, CGPoint) -> Bool) -> Int? {
+        guard points.count >= 2 else { return nil }
+        var last: Int?
+        for i in 0..<(points.count - 1) where hits(points[i], points[i + 1]) {
+            last = i
+        }
+        return last
+    }
+
+    /// Number of leading points that would be lost to a cut at `severIndex`.
+    func doomedCount(where hits: (CGPoint, CGPoint) -> Bool) -> Int {
+        guard let index = severIndex(where: hits) else { return 0 }
+        return index + 1
+    }
+
     @discardableResult
     func cut(where hits: (CGPoint, CGPoint) -> Bool) -> Bool {
-        guard points.count >= 2 else { return false }
-
-        var lastCutIndex: Int?
-        for i in 0..<(points.count - 1) where hits(points[i], points[i + 1]) {
-            lastCutIndex = i
-        }
-        guard let cut = lastCutIndex else { return false }
+        guard let cut = severIndex(where: hits) else { return false }
 
         let survivors = Array(points[(cut + 1)...])
         // Always keep the tip: the finger is still down, and drawing has to continue

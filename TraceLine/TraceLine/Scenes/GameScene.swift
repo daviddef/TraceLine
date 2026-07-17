@@ -107,11 +107,28 @@ final class GameScene: SKScene {
                                barWidth: size.width - 48)
         hudNode.updateTimer(remaining: levelConfig.timeLimit * 0.55)
 
-        // Pose obstacles in the gaps between passes. An obstacle touching the line would
-        // mean the round had already ended, so a screenshot showing that misstates the
-        // rules — keep them clear of the drawn path.
+        // A cutter is posed deliberately across the line, because the doomed tail it
+        // warns about is the point of the shot. Its lane crossing the path is legal —
+        // unlike a lethal obstacle, a cutter touching the line does not end the round.
+        if levelConfig.obstacleTypes.contains(.cutter) {
+            let cutter = ObstacleNode(type: .cutter, theme: theme)
+            cutter.position = CGPoint(x: playRect.midX + 40, y: playRect.midY - spacing / 2)
+            cutter.startCrossing(direction: -1, speed: 0)
+            cutter.zPosition = 6
+            let lane = laneNode(atY: cutter.position.y)
+            lane.alpha = 1
+            cutter.laneNode = lane
+            addChild(lane)
+            obstacleNodes.append(cutter)
+            addChild(cutter)
+            updateDoomedTail()
+        }
+
+        // Pose the rest in the gaps between passes. A *lethal* obstacle touching the line
+        // would mean the round had already ended, so a screenshot showing that misstates
+        // the rules — keep those clear of the drawn path.
         var placed: [CGPoint] = []
-        for type in levelConfig.obstacleTypes.prefix(2) {
+        for type in levelConfig.obstacleTypes.prefix(2) where !type.severs {
             guard let spot = clearSpot(awayFrom: placed) else { continue }
             let obs = ObstacleNode(type: type, theme: theme)
             obs.position = spot
@@ -191,6 +208,7 @@ final class GameScene: SKScene {
         guard stateMachine.phase == .drawing else { return }
 
         applyCutters()
+        updateDoomedTail()
 
         // An obstacle can fall onto a finger that isn't moving, so the tip is
         // re-checked every frame and not only on touchesMoved.
@@ -291,6 +309,25 @@ final class GameScene: SKScene {
 
         lineNode.update(points: drawingEngine.points)
         Haptics.cut()
+    }
+
+    /// Marks the stretch of line the cutters are going to take, live, while the player
+    /// draws. Without it the cut is the first news you get, and losing half a board with
+    /// no warning reads as the game stealing from you rather than as a bad bet.
+    /// The lane was always visible; the *consequence* was not.
+    private func updateDoomedTail() {
+        var doomed = 0
+        for cutter in obstacleNodes where cutter.obstacleType.severs {
+            guard let sweep = cutter.remainingSweep(in: playRect) else { continue }
+            // The same hit test the cut uses, over the lane the cutter has yet to
+            // travel — so the warning and the cut can never disagree.
+            let region = ObstacleDescriptor(id: cutter.hash, shape: .rect(sweep), severs: true)
+            doomed = max(doomed, drawingEngine.doomedCount(where: {
+                region.intersectsSegment(from: $0, to: $1)
+            }))
+        }
+        lineNode.markDoomed(engineCount: doomed,
+                            color: theme.obstacleColors[ObstacleType.cutter.themeIndex])
     }
 
     private func obstacleDescriptors() -> [ObstacleDescriptor] {

@@ -344,3 +344,76 @@ final class CutterTests: XCTestCase {
         XCTAssertEqual(engine.pointCount, 2)
     }
 }
+
+/// The doomed-tail preview warns the player which stretch a cutter is going to take.
+/// Its whole job is to agree with the cut — a warning that points somewhere the cut
+/// doesn't land is worse than no warning.
+final class DoomedTailTests: XCTestCase {
+
+    private var engine: DrawingEngine!
+
+    override func setUp() {
+        super.setUp()
+        engine = DrawingEngine()
+    }
+
+    private func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x, y: y) }
+
+    private func blade(atX x: CGFloat) -> (CGPoint, CGPoint) -> Bool {
+        { a, b in
+            GeometryHelpers.segmentsIntersect(a, b, CGPoint(x: x, y: -1000), CGPoint(x: x, y: 1000))
+        }
+    }
+
+    private func drawLine() {
+        engine.begin(at: p(0, 0))
+        for x in stride(from: CGFloat(10), through: 100, by: 10) {
+            _ = engine.extend(to: p(x, 0), obstacles: [])
+        }
+    }
+
+    func testPreviewMatchesWhatTheCutActuallyTakes() {
+        drawLine()
+        let warned = engine.doomedCount(where: blade(atX: 55))
+        let before = engine.pointCount
+
+        engine.cut(where: blade(atX: 55))
+
+        XCTAssertEqual(before - engine.pointCount, warned,
+                       "the player must lose exactly what they were warned about")
+    }
+
+    func testNothingIsDoomedWhenNoCutterThreatens() {
+        drawLine()
+        XCTAssertEqual(engine.doomedCount(where: blade(atX: 500)), 0)
+    }
+
+    func testDoomedGrowsAsTheLineCrossesFurtherPastTheLane() {
+        engine.begin(at: p(0, 0))
+        _ = engine.extend(to: p(100, 0), obstacles: [])
+        let early = engine.doomedCount(where: blade(atX: 50))
+
+        // Cross back over the same lane further along: more line is now behind it.
+        _ = engine.extend(to: p(100, 40), obstacles: [])
+        _ = engine.extend(to: p(20, 40), obstacles: [])
+        let later = engine.doomedCount(where: blade(atX: 50))
+
+        XCTAssertGreaterThan(later, early, "crossing the lane again dooms more of the tail")
+    }
+
+    func testDoomedCountAndSeverIndexAgree() {
+        drawLine()
+        let index = engine.severIndex(where: blade(atX: 55))
+        XCTAssertNotNil(index)
+        XCTAssertEqual(engine.doomedCount(where: blade(atX: 55)), (index ?? -1) + 1)
+    }
+
+    /// A cutter only takes what is still ahead of it — lane it has already passed is spent.
+    func testLaneAlreadyPassedDoomsNothing() {
+        drawLine()
+        // Sweep region entirely to the right of the whole line.
+        let spent = ObstacleDescriptor(id: 1, shape: .rect(CGRect(x: 200, y: -9, width: 100, height: 18)),
+                                       severs: true)
+        XCTAssertEqual(engine.doomedCount(where: { spent.intersectsSegment(from: $0, to: $1) }), 0)
+    }
+}
