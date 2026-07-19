@@ -1,0 +1,66 @@
+TraceLine is a single-player arcade puzzle game. No account, no login or registration, no
+in-app purchase, no advertising, no user-generated content, no data collection. The app
+requests no permissions of any kind. Everything is available from first launch — no
+credentials or sample files are needed.
+
+=== HOW TO PLAY — PLEASE READ FIRST ===
+
+Press and hold ONE finger on the board and drag. A line follows your finger. Two rules:
+
+1. DO NOT LIFT YOUR FINGER. The round ends the instant contact breaks.
+2. The line may never cross itself.
+
+This is the core mechanic, not a defect. If a round appears to end immediately, it is
+because the finger left the glass — the game working as designed. The result screen states
+the reason ("Finger lifted", "Line crossed itself", "Hit an obstacle", "Time's up").
+
+To clear a level, cover the target percentage of the board (marked on the bottom bar)
+before the timer expires.
+
+To reach gameplay: tap "Play", then level 1, "Warm Up", at the top of the map. It has no
+obstacles: cover 40% of the board in 60 seconds without lifting or crossing. Later levels
+add hazards that fall or move across the board; touching one ends the round. "Cutters"
+(vehicles on a dashed lane) sever the line instead of ending the round — the section they
+will take is highlighted first. Shaded circles are shelters: hazards bounce off them.
+
+=== INFORMATION REQUESTED ===
+
+2. DEVICES AND OPERATING SYSTEMS TESTED
+Physical device: iPhone 17 Pro (iPhone18,1) on iOS 26.0, installed via TestFlight. Also
+exercised on the iOS Simulator: iPhone 17 and iPhone 17 Pro Max. The app is iPhone only,
+portrait only, and supports iOS 16.0 and later.
+
+3. PURPOSE AND TARGET AUDIENCE
+A game of nerve and spatial planning for a general audience aged 4 and up. It is built on
+one idea: your finger is the game. Rather than tapping buttons or steering a character,
+the player draws the game state directly, and the drawn line becomes the obstacle they
+must then avoid. The longer the line, the less room remains, so every stroke trades
+progress against freedom. It offers a short, self-contained skill challenge — a round
+lasts under a minute — with no account, no social pressure and no spending, entirely
+offline.
+
+4. SETTING UP AND ACCESSING THE MAIN FEATURES
+No setup, credentials or sample files required. From the home screen:
+- "Play" opens the world map. Level 1 is unlocked; each further level unlocks when the
+  previous is cleared. 20 levels across 2 worlds.
+- "Themes" offers four visual themes. Neon is available immediately, the rest unlock after
+  World 1. Cosmetic only; it does not gate gameplay.
+- "Leaderboard" opens Game Center. Optional — declining to sign in does not affect play.
+No level need be completed to see the core loop: starting to draw demonstrates it at once.
+
+5. EXTERNAL SERVICES, TOOLS OR PLATFORMS
+Apple Game Center only, for an optional leaderboard and three achievements. No third-party
+SDKs, analytics, authentication services, payment processors, AI services, advertising
+networks or backend of any kind. The app makes no network requests other than Game
+Center's own. Progress is stored locally in UserDefaults and removed with the app.
+
+6. REGIONAL DIFFERENCES
+None. The app behaves identically in all regions. It is not localised (English only), has
+no region-gated content or features, and no server-side configuration that could vary by
+territory.
+
+7. REGULATED INDUSTRY OR PROTECTED THIRD-PARTY MATERIAL
+Neither applies. TraceLine is not associated with any regulated industry and contains no
+third-party material: every visual element — app icon, game art, levels and interface — is
+drawn procedurally in code by the developer. There are no licensed images, audio,
+trademarks or other protected assets, and no fonts beyond the system typefaces.
