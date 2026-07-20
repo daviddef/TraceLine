@@ -177,11 +177,11 @@ final class LineEffectTests: XCTestCase {
     /// The doomed-tail warning is drawn over the line in the cutter's colour. A line busy
     /// changing colour underneath it makes that warning hard to read, and that warning is
     /// the whole reason a cut feels fair rather than stolen.
-    func testRecolouringEffectsStayOffCutterLevels() {
-        for level in LevelConfig.all where level.effect.recolours {
+    func testEffectsThatObscureTheLineStayOffCutterLevels() {
+        for level in LevelConfig.all where level.effect.conflictsWithCutters {
             XCTAssertFalse(level.obstacleTypes.contains(.cutter),
-                           "level \(level.id) recolours the line on a cutter level, which "
-                           + "fights the doomed-tail warning for legibility")
+                           "level \(level.id) uses \(level.effect.rawValue) on a cutter level, "
+                           + "which fights the doomed-tail warning for legibility")
         }
     }
 
@@ -201,6 +201,15 @@ final class LineEffectTests: XCTestCase {
     }
 
     /// Sprinkled, not smeared: if most levels carry an effect it stops being a surprise.
+    /// Every effect that exists should turn up somewhere, or it is dead code the player
+    /// never sees — the same trap Shrinker fell into in v1.
+    func testEveryEffectIsUsedSomewhere() {
+        for effect in LineEffect.allCases where effect != .plain {
+            XCTAssertTrue(LevelConfig.all.contains { $0.effect == effect },
+                          "\(effect.rawValue) is implemented but no level uses it")
+        }
+    }
+
     func testEffectsAreSparing() {
         let decorated = LevelConfig.all.filter { $0.effect != .plain }.count
         XCTAssertLessThanOrEqual(decorated, LevelConfig.all.count / 2,

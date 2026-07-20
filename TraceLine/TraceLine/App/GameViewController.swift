@@ -47,6 +47,12 @@ final class GameViewController: UIViewController {
             return
         }
 
+        // Straight to the theme picker, for checking what locked cards say.
+        if CommandLine.arguments.contains("--debug-themes") {
+            skView.presentScene(ThemeSelectScene(theme: Theme.active, size: view.bounds.size))
+            return
+        }
+
         // Reaching the win screen legitimately needs a full round, so allow jumping
         // straight to it while iterating on its layout.
         if CommandLine.arguments.contains("--debug-win"),

@@ -13,6 +13,10 @@ final class LineNode: SKNode {
     private var sparkNode: SKEmitterNode?
     /// The travelling highlight used by `.comet`.
     private var cometNode: SKShapeNode?
+    /// The bright head drawn over the newest stretch, used by `.fade`.
+    private var headNode: SKShapeNode?
+    /// Marching dashes drawn over the line, used by `.chase`.
+    private var chaseNode: SKShapeNode?
     /// Seconds since the round began, driving the time-based effects.
     private var elapsed: TimeInterval = 0
 
@@ -87,10 +91,37 @@ final class LineNode: SKNode {
 
     private func setupEffect() {
         switch effect {
-        case .plain, .prism:
+        case .plain, .prism, .pulse, .flicker:
             break
 
-        case .spark:
+        case .fade:
+            // The base line is dimmed and a bright head is drawn over its newest stretch.
+            // Cheaper and steadier than splitting the path into a gradient of segments.
+            shapeNode.alpha = theme.lineAlpha * 0.4
+            glowNode?.alpha = 0.15
+            let head = SKShapeNode()
+            head.strokeColor = theme.lineColor
+            head.lineWidth = theme.lineWidth
+            head.lineCap = theme.lineCap
+            head.lineJoin = .round
+            head.fillColor = .clear
+            head.zPosition = 1
+            addChild(head)
+            headNode = head
+
+        case .chase:
+            let chase = SKShapeNode()
+            chase.strokeColor = theme.hudTextColor
+            chase.lineWidth = max(1.5, theme.lineWidth - 1.5)
+            chase.lineCap = .butt
+            chase.fillColor = .clear
+            chase.alpha = 0.75
+            chase.blendMode = .add
+            chase.zPosition = 1
+            addChild(chase)
+            chaseNode = chase
+
+        case .spark, .ember:
             let emitter = SKEmitterNode()
             emitter.particleTexture = Self.softDot
             // Tuned by looking at it. The first attempt used 5pt embers that shrank and
@@ -165,6 +196,43 @@ final class LineNode: SKNode {
         case .spark:
             sparkNode?.particleBirthRate = isDrawing ? 55 : 0
             if let tip = renderPoints.last { sparkNode?.position = tip }
+
+        case .ember:
+            // Walks the emitter along the path so embers come off the whole line rather
+            // than only the fingertip.
+            sparkNode?.particleBirthRate = isDrawing ? 45 : 0
+            guard renderPoints.count >= 2 else { return }
+            let walk = (elapsed * 0.9).truncatingRemainder(dividingBy: 1)
+            let i = min(renderPoints.count - 1, Int(walk * Double(renderPoints.count)))
+            sparkNode?.position = renderPoints[i]
+
+        case .fade:
+            guard renderPoints.count >= 2, let head = headNode else { return }
+            // Brighten the newest quarter of the path.
+            let from = max(0, renderPoints.count - max(2, renderPoints.count / 4))
+            let path = CGMutablePath()
+            path.move(to: renderPoints[from])
+            for i in (from + 1)..<renderPoints.count { path.addLine(to: renderPoints[i]) }
+            head.path = path.copy()
+
+        case .pulse:
+            let breath = 0.62 + 0.38 * (0.5 + 0.5 * sin(elapsed * 3.1))
+            shapeNode.alpha = theme.lineAlpha * CGFloat(breath)
+            glowNode?.alpha = 0.4 * CGFloat(breath)
+
+        case .flicker:
+            // Mostly steady, with brief stutters — a tube that is nearly gone.
+            let n = sin(elapsed * 47.0) * sin(elapsed * 13.7)
+            shapeNode.alpha = n > 0.86 ? theme.lineAlpha * 0.28 : theme.lineAlpha
+
+        case .chase:
+            guard renderPoints.count >= 2, let chase = chaseNode else { return }
+            let path = CGMutablePath()
+            path.move(to: renderPoints[0])
+            for p in renderPoints.dropFirst() { path.addLine(to: p) }
+            // Marching phase: the dashes travel toward the fingertip.
+            let phase = CGFloat((elapsed * 42).truncatingRemainder(dividingBy: 26))
+            chase.path = path.copy(dashingWithPhase: -phase, lengths: [7, 19])
 
         case .comet:
             guard renderPoints.count >= 2, let comet = cometNode else { return }
@@ -286,6 +354,8 @@ final class LineNode: SKNode {
         doomedNode?.path = nil
         sparkNode?.particleBirthRate = 0
         cometNode?.alpha = 0
+        chaseNode?.path = nil
+        headNode?.strokeColor = SKColor(hex: "#ff2255")
         let flash = SKAction.sequence([
             .scale(to: 1.04, duration: 0.08),
             .scale(to: 1.0, duration: 0.08),
@@ -300,6 +370,8 @@ final class LineNode: SKNode {
         elapsed = 0
         sparkNode?.particleBirthRate = 0
         cometNode?.alpha = 0
+        headNode?.path = nil
+        chaseNode?.path = nil
         shapeNode.strokeColor = theme.lineColor
         renderPoints = []
         renderSource = []

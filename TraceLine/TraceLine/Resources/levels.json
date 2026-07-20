@@ -42,7 +42,8 @@
         "y": 0.55,
         "radius": 0.15
       }
-    ]
+    ],
+    "lineEffect": "fade"
   },
   {
     "id": 4,
@@ -63,7 +64,8 @@
         "y": 0.62,
         "radius": 0.13
       }
-    ]
+    ],
+    "lineEffect": "pulse"
   },
   {
     "id": 5,
@@ -240,7 +242,7 @@
         "radius": 0.14
       }
     ],
-    "lineEffect": "prism"
+    "lineEffect": "flicker"
   },
   {
     "id": 12,
@@ -262,7 +264,8 @@
         "y": 0.65,
         "radius": 0.12
       }
-    ]
+    ],
+    "lineEffect": "chase"
   },
   {
     "id": 13,
@@ -313,7 +316,7 @@
         "radius": 0.12
       }
     ],
-    "lineEffect": "spark"
+    "lineEffect": "ember"
   },
   {
     "id": 15,
@@ -422,8 +425,7 @@
         "y": 0.5,
         "radius": 0.11
       }
-    ],
-    "lineEffect": "comet"
+    ]
   },
   {
     "id": 19,
@@ -481,7 +483,6 @@
         "y": 0.22,
         "radius": 0.1
       }
-    ],
-    "lineEffect": "spark"
+    ]
   }
 ]

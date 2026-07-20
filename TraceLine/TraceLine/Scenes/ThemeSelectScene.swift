@@ -51,7 +51,7 @@ final class ThemeSelectScene: SKScene {
         }
 
         let hint = SKLabelNode(fontNamed: Fonts.body(for: theme))
-        hint.text = "🏆 Unlock themes by completing worlds"
+        hint.text = "🏆 Each theme is earned — see what each one needs"
         hint.fontSize = 12
         hint.fontColor = theme.hudTextColor.withAlphaComponent(0.45)
         hint.position = CGPoint(x: 0, y: -size.height / 2 + 60)
@@ -102,10 +102,23 @@ final class ThemeSelectScene: SKScene {
         nameLabel.fontColor = cardTheme.hudTextColor
         nameLabel.horizontalAlignmentMode = .left
         nameLabel.verticalAlignmentMode = .center
-        nameLabel.position = CGPoint(x: -cardSize.width / 2 + 136, y: 0)
+        nameLabel.position = CGPoint(x: -cardSize.width / 2 + 136, y: isUnlocked ? 0 : 10)
         nameLabel.alpha = isUnlocked ? 1 : 0.4
         nameLabel.name = name
         container.addChild(nameLabel)
+
+        // A padlock alone tells the player nothing. Say what it costs.
+        if !isUnlocked {
+            let need = SKLabelNode(fontNamed: Fonts.body(for: theme))
+            need.text = cardTheme.requirement.describedShort
+            need.fontSize = 11
+            need.fontColor = theme.hudTextColor.withAlphaComponent(0.55)
+            need.horizontalAlignmentMode = .left
+            need.verticalAlignmentMode = .center
+            need.position = CGPoint(x: -cardSize.width / 2 + 136, y: -11)
+            need.name = name
+            container.addChild(need)
+        }
 
         let status = SKLabelNode(fontNamed: Fonts.display(for: theme))
         status.text = isUnlocked ? (isActive ? "✓" : "") : "🔒"

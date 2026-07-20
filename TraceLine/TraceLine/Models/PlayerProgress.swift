@@ -73,13 +73,26 @@ final class PlayerProgress {
         defaults.set(key.rawValue, forKey: "active_theme")
     }
 
-    /// Neon is always available; clearing World 1 unlocks the rest.
-    func unlockedThemes() -> [ThemeKey] {
-        guard stars(for: Self.worldOneFinalLevel) >= 1 else { return [.neon] }
-        return ThemeKey.allCases
+    /// Total stars earned across the whole game.
+    var totalStars: Int { LevelConfig.all.reduce(0) { $0 + stars(for: $1.id) } }
+
+    /// True if a world's final level has been cleared.
+    func hasClearedWorld(_ worldId: Int) -> Bool {
+        guard let world = WorldConfig.world(id: worldId), let final = world.finalLevelID
+        else { return false }
+        return stars(for: final) >= 1
     }
 
-    func isThemeUnlocked(_ key: ThemeKey) -> Bool { unlockedThemes().contains(key) }
+    func isThemeUnlocked(_ key: ThemeKey) -> Bool {
+        switch Theme.theme(for: key).requirement {
+        case .free:                 return true
+        case .clearWorld(let w):    return hasClearedWorld(w)
+        case .collectStars(let n):  return totalStars >= n
+        }
+    }
+
+    func unlockedThemes() -> [ThemeKey] { ThemeKey.allCases.filter(isThemeUnlocked) }
+
 
     /// Debug helper — unlocks every level so later levels can be reached directly.
     func unlockAll() {

@@ -138,6 +138,32 @@ struct Theme {
         obstacleGlow: false
     )
 
+    /// What a player must do to earn a theme. Spread across the game rather than handed
+    /// over in one lump: the old rule unlocked all three the moment level 10 fell, which
+    /// left nine levels with no reward and then ten more with nothing left to earn.
+    enum Requirement {
+        case free
+        case clearWorld(Int)
+        case collectStars(Int)
+
+        var describedShort: String {
+            switch self {
+            case .free:                 return ""
+            case .clearWorld(let w):    return "Clear World \(w)"
+            case .collectStars(let n):  return "Collect \(n) stars"
+            }
+        }
+    }
+
+    var requirement: Requirement {
+        switch key {
+        case .neon:        return .free
+        case .clay:        return .clearWorld(1)
+        case .retro:       return .clearWorld(2)
+        case .watercolour: return .collectStars(40)
+        }
+    }
+
     static func theme(for key: ThemeKey) -> Theme {
         switch key {
         case .neon:        return .neon
