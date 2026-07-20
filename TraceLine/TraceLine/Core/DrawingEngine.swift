@@ -28,6 +28,7 @@ final class DrawingEngine {
         points = [point]
         totalDistance = 0
         nearMissCount = 0
+        isBurning = false
         obstaclesInNearMissZone.removeAll()
     }
 
@@ -90,6 +91,71 @@ final class DrawingEngine {
         }
         return p
     }
+
+    // MARK: - Burning
+
+    /// True while a Fuse has the line alight.
+    private(set) var isBurning = false
+
+    /// What happened when the flame advanced.
+    enum BurnResult: Equatable {
+        case notBurning
+        /// The flame is still eating its way toward the fingertip.
+        case burning
+        /// It reached the tip. The round is over.
+        case reachedTheTip
+    }
+
+    /// Sets the line alight where `hits` reports contact.
+    ///
+    /// A Fuse is a Cutter whose cut point keeps moving: everything behind the contact is
+    /// gone immediately, exactly as a cut, and then the flame keeps advancing toward the
+    /// fingertip until the player reaches shelter. That framing is why almost none of this
+    /// needed new machinery.
+    @discardableResult
+    func ignite(where hits: (CGPoint, CGPoint) -> Bool) -> Bool {
+        guard !isBurning, severIndex(where: hits) != nil else { return false }
+        cut(where: hits)
+        isBurning = true
+        return true
+    }
+
+    /// Eats `distance` points-worth of line from the burnt end toward the fingertip.
+    ///
+    /// Coverage is recomputed from `points` every frame, so it retracts on its own as the
+    /// flame advances — the player watches progress burn away without anything extra
+    /// being wired up.
+    @discardableResult
+    func advanceBurn(distance: CGFloat) -> BurnResult {
+        guard isBurning else { return .notBurning }
+        var remaining = distance
+
+        while points.count >= 2, remaining > 0 {
+            let step = GeometryHelpers.distance(points[0], points[1])
+            if step <= remaining {
+                remaining -= step
+                points.removeFirst()
+            } else {
+                // Part-way along this segment: walk the burnt end forward.
+                let t = remaining / step
+                points[0] = CGPoint(x: points[0].x + (points[1].x - points[0].x) * t,
+                                    y: points[0].y + (points[1].y - points[0].y) * t)
+                remaining = 0
+            }
+        }
+
+        if points.count < 2 {
+            isBurning = false
+            return .reachedTheTip
+        }
+        return .burning
+    }
+
+    /// The flame dies — the player reached shelter. Whatever is left of the line is kept.
+    func extinguish() { isBurning = false }
+
+    /// Where the flame currently is, for drawing it.
+    var burnFront: CGPoint? { isBurning ? points.first : nil }
 
     // MARK: - Cutting
     /// Severs the path wherever `hits` reports a crossing, keeping only the piece still

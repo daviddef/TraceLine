@@ -1,93 +1,48 @@
 # TraceLine — Roadmap
 
-Status: 17 July 2026. v1 is built, tested, and on TestFlight as build `202607170816`.
-The App Store listing is complete and waiting on submission.
+Status: 20 July 2026. Twenty levels across two worlds, on TestFlight as build
+`202607201131`. 103 unit tests, 5 UI tests, ~3,700 lines of Swift. Version 1.0 was
+rejected once under Guideline 2.1 for missing review information; that has been answered
+and is waiting on a screen recording and resubmission.
 
 ---
 
-## Where we are
+## The three questions that decide this
 
-**Shipped (v1, World 1).** The two rules, four fail conditions, coverage-and-timer win
-condition, 10 levels, 4 themes, Game Center leaderboard and achievements, and the full
-release pipeline. 50 unit tests, 5 UI tests.
+Everything below is downstream of these. They are in the order they matter.
 
-**Blocked on a human, not on code:**
+### 1. Is it fun? — unknown
 
-| | |
-|---|---|
-| App Privacy questionnaire | Web UI only, no API. Answer: data not collected |
-| Submit for review | Everything else is in place |
-| **Level 1 difficulty** | **Never validated by a real player. See Risks** |
+Nobody has played twenty levels. The difficulty curve was rebuilt to be measurably
+monotonic, but the headroom figures assume a sustained drawing speed of about 400 pt/s,
+and **that number is a model, not a measurement**. Levels 18–20 ask for 20–21 passes of
+the board in 23–25 seconds. If that is physically unclearable the curve's shape survives
+and the time limits scale — but somebody has to find out.
 
----
+Cheapest unknown to close, most expensive to leave open. Everything else here assumes the
+core loop is good.
 
-## What the research changed
+### 2. Is there enough of it? — no, structurally
 
-Six findings that should steer everything below. Full sourcing in the session; evidence
-strength is called out because most published retention advice is vendor marketing with
-no methodology behind it.
+GameAnalytics' 2026 cross-title telemetry puts median mobile D7 at ~4%, with arcade titles
+leading on D1 and decaying hardest. TraceLine is arcade-shaped and finite. Twenty levels
+beats ten, but it is still a wall: once they are cleared there is nothing to come back to.
 
-### 1. We are building a modern Qix — and nobody noticed
+**Endless mode is the structural answer**, and it is cheap — the engine already spawns,
+escalates and scores. What it lacks is a level config that never ends.
 
-The brief benchmarks against 1LINE, Linelight and Snake. Those are line games, but the
-actual ancestor is **Qix (1981)** and **Volfied (1989)**: cover a board with a
-**vulnerable trail** that hazards attack. That is TraceLine's exact shape, and it means
-45 years of solved problems are sitting there. Chief among them:
+### 3. Can people play it? — many can't
 
-**Volfied's flame.** When an enemy touches your unfinished wire, it doesn't kill you — a
-flame runs down the line and you race it to safety. Instant death became a timed escape
-*with agency*. This is the proven answer to precisely the frustration the Cutter is
-trying to solve, and it is strong precedent rather than opinion.
-
-### 2. Obstacles are not garnish — they are the entire game
-
-TraceLine's coverage counts cells the line passes through. That makes the optimal
-strategy a **serpentine sweep**: back and forth, spaced one cell apart, until the bar
-fills. It is mechanical and it is boring — and it is exactly what levels 1–5 ask for,
-because they have no obstacles at all.
-
-Obstacles are the only thing that breaks the sweep and forces a decision. So the
-instinct that we under-built "objects in the way" is right, and it is more serious than
-a missing feature: **half of World 1 is a chore with a stopwatch.** The fix is not only
-new hazard types, it is introducing them far earlier than level 6.
-
-### 3. Ten levels is a D7 cliff, structurally
-
-GameAnalytics' 2026 cross-title telemetry (the one genuinely empirical source found):
-median mobile D1 ~22%, **median D7 ~4%**, top decile ~12%. Arcade titles lead on D1 and
-decay hardest. TraceLine is arcade-shaped, has ten levels, and no endless mode — so
-there is nothing to retain anyone past day one. No cosmetic layer fixes a content wall.
-
-### 4. True severing is rare — take that as a warning and a gift
-
-Searching hard for prior art on a hazard that *cuts* the trail turned up almost nothing:
-Paper.io, splix, slither all kill on trail contact. The nearest precedent is a designer
-blog. Rare means differentiated, and it also means unproven — so the Cutter should be
-prototyped and felt before it is scheduled.
-
-### 5. The level map is folklore
-
-World-map node trails are the dominant casual convention, but there is **no public A/B
-evidence** they lift engagement. The only concrete claim found is inside a King UI
-patent — evidence of a believed problem, not a measured effect. At ten levels a map is
-cosmetic theatre. Named levels are the part that carries the value.
-
-### 6. The monetisation lever we assumed is unavailable
-
-"Remove ads" converts ~11% of iOS first-spenders — and is meaningless here, because
-there are no ads to remove. What is left is a multi-tier **consumable tip jar** (best
-practical evidence, though n=1) and cosmetic theme packs. Payer rates cluster at 2–5% of
-DAU and that number is weakly sourced. Treat revenue as goodwill, not a plan.
-
-**Bonus, and possibly the most valuable line in the research:** a rule set built on
-*never lift* and *never cross* punishes hand tremor and low dexterity brutally. A
-forgiveness radius and an obstacle-free practice mode would open the game to players who
-currently cannot play it at all — and accessibility is the single biggest untapped App
-Store featuring angle.
+*Never lift* plus *never cross* punishes hand tremor and low dexterity brutally. That is
+both an exclusion and, per the research, the single biggest untapped App Store featuring
+angle. A forgiveness radius and a practice mode would open the game to players who
+currently cannot play it at all.
 
 ---
 
 ## Design principles
+
+Unchanged, and worth re-reading before adding anything.
 
 1. **Your finger is the game.** Not a character, not a cursor.
 2. **The line is the hazard.** Good additions make your past self more dangerous.
@@ -97,230 +52,261 @@ Store featuring angle.
 
 ---
 
-## Now — the next build
+## The spine: what each world takes from you
 
-### Hazards that cost instead of kill
+Naming this made World 3 obvious.
 
-Every obstacle today is a wall: touch it, round over. Two additions, both softenings:
+| World | Takes | The lesson |
+|---|---|---|
+| 1 — The Grid | Your **round** | Hazards end you. Learn to dodge. |
+| 2 — The Field | Your **control** | The magnet bends your input. The line stops going where you point. |
+| **3 — The Burn** | Your **line, over time** | The first hazard you can *beat* rather than merely avoid. |
 
-**The Cutter** *(your idea, and it was in the original research as "Eraser — deletes a
-section of your drawn line if touched", dropped when HANDOVER trimmed five obstacle types
-to four).*
+Principle 4's second clause — "a race you were given a chance to win" — is written into the
+principles and used by nothing. World 3 is where it becomes the whole point.
 
-A Cutter travels a **visible lane** across the board — a track, a trail, a flight path.
-Where it crosses your line, it severs it. The piece attached to your fingertip survives;
-the rest is gone. You are not killed, you are set back. Draw across the tracks and the
-train keeps taking it from you.
+---
 
-*Why it fits the engine:* coverage is recomputed every frame from the live point array,
-so deleting points automatically retracts the coverage bar. The punishment is already
-wired — the player watches progress physically retreat.
+## World 3 — The Burn
 
-*And the trap:* if coverage ever became a cumulative "cells ever touched" set — an
-obvious-looking optimisation — the Cutter would **invert into a reward**, because a
-shorter line means fewer walls and more freedom at no cost. The mechanic depends on
-coverage staying live. This needs a test pinning it.
+> *The board stops trying to end you and starts trying to outlast you.*
 
-*Open decisions:* severed line vanishes (rather than lingering as a dead wall —
-otherwise it punishes twice); freed space is redrawable, so a cut costs *time*, not
-permanent progress; a player boxed in by their own line could deliberately take a cut to
-escape, which is either skill expression or an exploit — playtest before deciding.
+### The Fuse
 
-**The Fuse** *(Volfied, 1989)* — the higher-conviction one. Instead of a blocker killing
-on contact, it **ignites your line** and a flame runs down it toward your finger. Reach
-safety and you live. Same hazard, but the player gets a chance and a story.
+Volfied (1989) solved this exact problem: rather than killing on contact, an enemy touching
+your wire sends a **flame down the line**, and you race it to safety. Instant death becomes
+a timed escape with agency. It is 45 years load-bearing.
 
-One type, four skins: Neon gets a light-cycle, Clay a beetle, Retro a train.
+It was blocked on TraceLine having nowhere to run. **Safe zones removed that blocker** —
+so the shelters already built stop being a nice-to-have and become the point. That is the
+most satisfying thing about this design: it retroactively upgrades a mechanic already
+shipped.
 
-### Rebalance World 1
+**How it behaves**
 
-Obstacles from level 2, not level 6. Levels 1–5 are currently a serpentine drill.
+- A Fuse falls like any hazard. Touching it does **not** end the round.
+- On contact it **ignites the line at the point of contact**.
+- A flame travels from there *toward your fingertip*, consuming line behind it. Coverage
+  retracts as it goes — the player watches progress burn away.
+- Reach a **safe zone** with your tip and the flame dies. You keep what is left.
+- Let it reach your finger and the round ends.
 
-### Named levels
+**Why it fits the engine as built**
 
-Cheap, and the part of the "fun map" ask the evidence actually supports:
+Almost all of it already exists:
+
+| Needed | Already there |
+|---|---|
+| Remove line from one end | `DrawingEngine.cut(where:)` |
+| Coverage retracts when points go | Coverage is recomputed live every frame |
+| Hazard tested against the whole line, not just the tip | The Cutter does this |
+| A shelter that stops a hazard | `SafeZone.contains` / `shelters(from:to:)` |
+| Warning drawn on a doomed stretch | `LineNode.markDoomed` |
+
+Genuinely new: a **burning state** — an index advancing along the path each frame, plus an
+escape check against the safe zones.
+
+**Decisions to settle by playing it**
+
+- **Flame speed** must be slower than a player can draw, or it is not a race, it is a
+  delayed death. Start generous, tighten.
+- **Telegraphing is free here** — a visible flame eating a visible line satisfies principle
+  3 without extra UI.
+- **A Fuse level must have a reachable shelter.** That is a level-design constraint and
+  belongs in a test, not a habit: assert every Fuse level has at least one safe zone.
+- **Two fuses at once is probably one too many.** Cap it like cutters.
+
+### Wind — the secondary mechanic
+
+The Fuse alone is thin over ten levels. **Wind** pairs with it thematically and is cheap: a
+constant drift applied to every recorded point, so the whole board pulls one way.
+Mechanically it is the magnet's `pulled()` with a uniform vector instead of a radial one —
+the hook already exists.
+
+Wind feeds fire, so there is an obvious escalation where wind accelerates the flame in its
+direction. That may be one interaction too many; treat it as optional.
+
+### Level names
 
 | | | | | |
 |---|---|---|---|---|
-| 1 Warm Up | 2 Room to Move | 3 Tight Quarters | 4 The Long Way | 5 Breathing Room |
-| 6 Company | 7 Traffic | 8 Crossfire | 9 Rush Hour | 10 Gridlock |
+| 21 Tinder | 22 Smoulder | 23 Firebreak | 24 Updraft | 25 Backdraft |
+| 26 Ash | 27 Wildfire | 28 Scorched | 29 Inferno | 30 Cinder |
 
-The scattered node map is deferred, not rejected — see Later. At ten levels it is
-theatre; at thirty it earns its keep.
+### The gate
+
+`testEachWorldIntroducesSomethingNew` fails if World 3 ships without a new hazard type, and
+`testDemandNeverStallsOrGoesBackwards` fails if it opens softer than level 20 closed. Both
+working as intended: World 3 cannot be "World 2 with bigger numbers" without a red test.
 
 ---
 
-## Exploring: safe zones
+## Now
 
-> "Safe zones, where objects rebound off and you can hide."
+Ordered by unknown-closed per hour spent.
 
-The most interesting idea on this list, for three reasons.
-
-### 1. It fixes the deepest problem in the game
-
-Finding 2 above: coverage counts cells the line passes through, so on an empty board the
-optimal strategy is a serpentine sweep. Every hazard so far is a *thing to dodge* on that
-empty board — none of them change its shape. Safe zones are the first proposal that makes
-the board **terrain**. Obstacles rebounding off them turns an empty field into a place
-with structure, and a sweep stops being either optimal or possible.
-
-That is worth more than another hazard type.
-
-### 2. It unlocks the Fuse
-
-I said earlier that Volfied's flame doesn't port, because racing a burning line to safety
-presupposes a **safe zone** and TraceLine has none. That objection dies the moment this
-exists. Safe zones are the missing primitive the whole Qix lineage is built on, and they
-make the 1989 solution available to us.
-
-### 3. It is the mirror of the Cutter
-
-The Cutter makes you **spend line**. A safe zone makes you **spend time** — shelter costs
-seconds against a clock you cannot pause. Two costs, opposite currencies, same decision:
-is this worth it? That symmetry is the sign of a mechanic that belongs.
-
-### The constraint nobody can design around
-
-**You can never enclose an area**, so territory cannot be *earned* the Qix way. Touching
-your own line is a crossing, and a crossing ends the round — closing a loop is by
-definition a fail. Qix claims territory by sealing a region against an edge; TraceLine
-structurally cannot.
-
-So zones are **placed by level design**, not won. That is a smaller idea than Qix's, and
-it is the only one the rules permit.
-
-### How it would work
-
-- **Obstacles rebound.** A zone is solid to hazards; they bounce off it. This is what
-  makes zones read as terrain rather than as a UI overlay.
-- **Cutters cannot enter, so zones cast shadows.** A zone blocking a lane clips that
-  cutter's remaining sweep — line beyond it is out of reach. The doomed-tail preview
-  already computes from `remainingSweep`, so it would show these shelters **for free**,
-  with no new code.
-- **Your line is safe inside.** That is the hiding.
-
-### The two ways it goes wrong
-
-- **Camping.** If hiding is free, hide. It isn't free: the clock runs and the coverage
-  target is most of the board, so shelter always costs progress. That tension is the
-  mechanic — but it needs playtesting, not confidence.
-- **Free coverage.** If cells inside a zone count toward the target, a big zone is a safe
-  farm and the game is over. Zones must be **small refuges, not fields** — or coverage
-  inside them shouldn't count at all. Sizing is the whole balance question.
-
-### Open question
-
-Static pockets are the cheap, rules-compatible version. The richer one is an
-**edge-anchored** claim: a line run from one board edge to another divides the board, and
-the smaller side becomes safe. That is Qix, it is legal under rule 2 (no loop is closed —
-the edges do the sealing), and it would be a far bigger change to the win condition.
-Worth prototyping the cheap one first and seeing whether the idea has legs.
+1. **Play twenty levels on a device and record where it breaks.** Closes question 1. The
+   App Store screen recording forces most of this anyway.
+2. **Endless mode.** Closes question 2. Board never ends, hazards escalate on a curve, one
+   score, straight into the Game Center leaderboard — which today has almost nothing
+   meaningful to rank.
+3. **Audio.** `SoundHook` already marks every cue (`tap`, `fail`, `win`, `nearMiss`, `cut`)
+   and no asset has ever existed. Best polish-per-hour on the list: a line that hums as it
+   draws and cracks when it is cut is most of the game's felt quality.
+4. **Accessibility pass.** Closes question 3. Forgiveness radius on self-crossing, practice
+   mode with no timer and no hazards, Reduce Motion honoured (line effects, scanlines), and
+   a high-contrast option.
 
 ## Next
 
-- **Endless mode.** The highest-conviction bet in the research: the only structural
-  answer to a ten-level D7 cliff. Board never ends, hazards escalate, one score.
-- **Accessibility pass.** Forgiveness radius, practice mode, tremor tolerance.
-- **World 2 (levels 11+)** — the brief's own next milestone. **Shrinker** is already
-  built, themed and rotating, and has never appeared on screen because no level lists it.
-  **Magnetic pull** likewise: the research specced it to *pull the line*, HANDOVER
-  downgraded it to "visual only", so today it pulses and does nothing. The pull is the
-  interesting half.
-- **Audio.** `SoundHook` marks every cue; no assets exist. Best polish-per-hour on the
-  list.
-
----
-
-## The fading tail — a mode, not a flourish
-
-Proposed alongside the cosmetic line effects: "some lines slowly start disappearing at the
-tail end". The other suggestions (rainbow, sparks) are decoration. This one is not, and it
-is worth keeping separate.
-
-The same `points` array is three things at once: the wall you must not cross, the coverage
-that scores you, and what gets drawn. So a vanishing tail can only mean one of:
-
-1. **Fades visually, still blocks and still counts.** An invisible wall — it breaks design
-   principle 3 outright. Not an option.
-2. **Genuinely removed.** Coverage retracts as it goes, and your line stops being a
-   permanent obstacle. That is a different game: the tension inverts from "the board fills
-   up and you run out of room" to "outrun your own decay". It is Snake, and it is good —
-   but it is not this game's rules.
-3. **Removed as a wall, kept as coverage.** Needs a separate claimed-cells set, which is
-   precisely the change flagged under the Cutter as inverting that mechanic into a reward.
-
-Option 2 is the interesting one and deserves to exist as a **named mode** the player
-chooses, not a surprise attached to random levels. A player must know which rules they are
-playing under before they start drawing.
-
-## World 3
-
-Worlds are data now: `worlds.json` plus a `world` on each level, one trail per world.
-A third world is content, not surgery — but a test fails if it introduces no hazard the
-previous world did not have, because "the last world with bigger numbers" is precisely
-what the research says will not hold anyone.
-
-The obvious candidate is the **Fuse** (Volfied, 1989): a hazard that ignites your line and
-burns it toward your finger while you race for a shelter. It was blocked on there being
-anywhere to run — safe zones fixed that. It is the last big idea on the list with 45 years
-of proof behind it.
+5. **World 3 — The Burn.** The Fuse, wind, ten levels. Designed above.
+6. **Daily seeded challenge.** One deterministic board per day, shared globally. Best
+   evidence-to-effort ratio in the research, and it gives the leaderboard a reason to exist.
+7. **Settings screen.** The wireframe has one; the architecture spec's file list does not,
+   so it was never built. Accessibility toggles need somewhere to live, which makes this a
+   dependency of item 4 rather than a nicety.
+8. **Per-level leaderboards and personal bests on the map.** The map shows stars but not
+   your best score. Cheap, and it makes replay legible.
 
 ## Later
 
-- **Daily seeded challenge.** One deterministic board per day, shared globally —
-  Wordle-shaped, cheap, and it gives the leaderboard a reason to exist.
-- **Async ghost racing.** Replay a friend's line over your own. Uses the Game Center
-  integration already shipping; no servers.
-- **The level map**, once there are enough levels to justify it.
-- **Tip jar** — multi-tier consumable. `Core/Store.swift` is already wired and inert;
-  turning it on needs products, a paid-apps agreement, an updated IAP declaration and UI.
-- **Settings screen.** The wireframe has one; the architecture spec's file list does not.
-- **Pause overlay** currently works only before a round starts.
-
-**Explicitly not doing:** UGC/level editor (coverage boards are trivial to author;
-moderation cost exceeds the value), multiplayer, iCloud sync, iPad.
+9. **Decay mode.** The Snake variant: the tail dissolves as you draw, coverage drains, and
+   the line stops being a permanent wall. It inverts the core tension from *the board fills
+   up and you run out of room* to *outrun your own decay*. Must be a **named mode the
+   player chooses** — you have to know which rules you are playing under before you start
+   drawing.
+10. **Async ghost racing.** Replay a friend's line over your own. Uses the Game Center
+    integration already shipping; no servers.
+11. **Tip jar.** `Core/Store.swift` is wired and inert. Turning it on needs products in App
+    Store Connect, a paid-apps agreement, an updated IAP declaration, and UI. Expect 1–3%
+    conversion at best; treat revenue as goodwill, not a plan.
+12. **Analytics provider.** `Core/Analytics.swift` has the call sites and no SDK. Attaching
+    one means revisiting the "data not collected" privacy declaration and PRIVACY.md.
+13. **iPad layout.** Out of scope for v1; the play area is already normalised, so it is
+    mostly HUD work.
 
 ---
 
-## The difficulty curve
+## Feature catalogue
 
-Measured, not guessed. `DifficultyCurveTests` runs a serpentine through the real coverage
-algorithm and reports what each level actually asks for. Two things fell out of that:
+Everything considered, scheduled or not. Conviction is my own read, not measured.
 
-**Passes needed ≈ targetCoverage × gridSize.** Coverage counts cells the line crosses, so
-a serpentine of R rows on an N×N grid covers about R/N. That makes `gridSize` exactly as
-strong a difficulty lever as the target percentage, and it means **target coverage alone
-is not a difficulty ranking** — 0.65 on a 20-grid and 0.65 on a 32-grid are different
-games. Both are now set together to land a chosen number of passes.
+### Modes
 
-**The old curve stalled and reset.** Measured: levels 2‑3‑4 all asked 7 passes, 5‑6 both
-10, 9‑10 both 13, and level 11 dropped back to 7 — identical to level 2. Six of ten steps
-in World 1 asked for nothing new, and World 2 spent until level 17 climbing back to where
-World 1 ended.
+| Feature | Conviction | Note |
+|---|---|---|
+| Endless / survival | **High** | The only structural answer to a finite game |
+| Daily seeded challenge | **High** | Wordle-shaped; makes the leaderboard matter |
+| Practice / zen (no timer, no hazards) | **High** | Doubles as the accessibility on-ramp |
+| Decay mode (dissolving tail) | Medium | Genuinely different game; needs its own tuning |
+| Time attack (fixed board, fastest clear) | Medium | Cheap once per-level leaderboards exist |
+| Mirror mode (draw one line, get two) | Low | Novel, but fights "the line is the hazard" |
 
-The spine is now **required drawing speed**, which combines how much board you must fill
-with how long you get. It climbs 45 → 332 pt/s across the twenty levels (previously
-45 → 133), and time headroom tightens from about 9× down to 1.2×.
+### Mechanics
 
-**Teaching a mechanic is not the same as lowering difficulty** — this was got wrong once
-and enforced with a test. World 2 opens *harder* than World 1 closed; the magnet gets its
-spotlight by being nearly the only hazard on the board at level 11, not by making the
-board easy. A test now permits thinning the hazard mix only when a genuinely new hazard is
-being introduced.
+| Feature | Conviction | Note |
+|---|---|---|
+| The Fuse | **High** | World 3's headline; 45 years of precedent |
+| Wind / global drift | Medium | Cheap — `pulled()` with a uniform vector |
+| Collectibles on the board | Medium | A second objective competing with coverage |
+| Boss levels (one large patterned hazard) | Medium | Good world finales; a lot of bespoke work |
+| Portals | Low | Breaks the "one continuous line" reading |
+| Slippery input (lag / smoothing) | Low | Reads as broken input, not as a mechanic |
+| Line width as a variable | Low | Sounds harder; mostly just fiddly |
 
-**Unvalidated:** the headroom figures assume a sustained drawing speed of about 400 pt/s.
-That is a model, not a measurement — nobody has been timed. If the back half proves
-impossible, the fix is to scale the time limits; the shape of the curve is independent of
-that constant.
+### Progression and meta
+
+| Feature | Conviction | Note |
+|---|---|---|
+| Per-level personal bests on the map | **High** | Cheap; makes replay legible |
+| Star-gated bonus levels | Medium | Gives stars a purpose beyond themes |
+| More achievements | Medium | Three is thin for twenty levels |
+| Streaks | Medium | 48% industry adoption, no public efficacy data |
+| Theme packs beyond the four | Low | Only worthwhile if a tip jar exists to attach them to |
+
+### Social
+
+| Feature | Conviction | Note |
+|---|---|---|
+| Async ghost racing | Medium-high | No servers; uses what already ships |
+| Share a clear as video | Medium | ReplayKit; strong organic reach for a visual game |
+| Per-level leaderboards | Medium | Needed before time attack means anything |
+
+### Polish
+
+| Feature | Conviction | Note |
+|---|---|---|
+| Audio | **High** | Hooks exist, assets never did. Best ratio on the list |
+| Level intro cards | Medium | "12 — Bend" before the round; sells the naming work |
+| Richer pause overlay | Medium | Currently only reachable before a round starts |
+| Win/fail screen animation | Low | Already decent |
+
+### Accessibility
+
+| Feature | Conviction | Note |
+|---|---|---|
+| Forgiveness radius on self-crossing | **High** | The single biggest exclusion today |
+| Practice mode | **High** | Also a mode; also a featuring angle |
+| Reduce Motion support | **High** | Line effects and scanlines should honour it |
+| High-contrast theme | Medium | The four themes are aesthetic, not accessible |
+| VoiceOver on menus | Medium | Menus are `SKLabelNode`s with no accessibility tree |
+| Larger touch targets | Low | Not currently a complaint |
+
+---
+
+## Shipped since v1
+
+Recorded because several of these were fixes to things that had quietly never worked.
+
+- **Obstacles from level 2** rather than level 6. Coverage counts cells the line crosses,
+  so on an empty board the optimal strategy is a serpentine sweep — half of World 1 was a
+  drill with a stopwatch.
+- **The Cutter**, and then the **doomed-tail preview**. The first playtest verdict was that
+  a cut "feels like the game stole something". The lane was telegraphed but the
+  *consequence* was not, so the fix was information, not mercy: the stretch about to be
+  taken is now drawn live, which turns a cut from theft into a choice.
+- **Safe zones.** Shelters that hazards rebound off. Placed by level design, because
+  territory cannot be *earned* here — closing a loop means touching your own line, which is
+  a crossing, which is a fail.
+- **World 2 — The Field**, and **magnetic pull made real**. Magnetic shipped in v1 as a
+  hazard that pulsed and had no engine effect whatsoever.
+- **Shrinker actually spawns.** It shipped in v1 fully built, themed and rotating, and
+  never once appeared because no level listed it.
+- **The difficulty curve rebuilt.** Measured with the real coverage algorithm: six of ten
+  steps in World 1 asked for nothing more than the step before, and level 11 dropped back
+  to level 2's demand. Now monotonic, 45 → 332 pt/s.
+- **The level map** as a trail the player draws, with named levels.
+- **Eight line effects**, per level, deterministic.
+- **Theme unlocks that mean something.** The screen promised "unlock themes by completing
+  worlds" while the code handed over all three the instant level 10 fell.
+
+---
+
+## Explicitly not doing
+
+- **UGC / level editor.** Coverage boards are near-trivial to author, so the ceiling is
+  low, and moderation cost exceeds the value.
+- **Multiplayer.** Out of scope in the brief, and a different game.
+- **iCloud sync.** UserDefaults is sufficient; sync is a support burden for a game with no
+  account.
+- **Ads.** There are none, the listing says so, and "remove ads" as a monetisation lever is
+  therefore unavailable by choice.
+
+---
 
 ## Risks
 
-**Level 1 has never been played by a human.** 50% coverage of a 15×15 grid in 60 seconds,
-no lifting, no crossing — and, per finding 2, with no obstacles it is a pure serpentine
-drill. The maths is right and the tests pass; "correct" and "fun" are different claims
-and only one has been checked. A reviewer who cannot clear level 1 is a plausible 2.1
-rejection. It is one line in `levels.json`.
+**The difficulty curve is modelled, not measured.** Headroom assumes ~400 pt/s sustained
+drawing and nobody has been timed. If the back half is unclearable, time limits scale
+independently of the curve's shape — but this is the assumption most likely to be wrong.
 
-**The whole difficulty curve is unvalidated.** It was written from a spec, never felt.
+**App Store review is mid-flight.** Version 1.0 is rejected pending a screen recording and
+resubmission. Everything shipped since — World 2, the difficulty rebuild, line effects,
+theme unlocks — is in the attached build and unreviewed.
 
-**The Cutter is unproven.** Nobody ships it. Prototype and play it before committing.
+**Three subsystems are inert by design and easy to forget.** `Store` (IAP shell),
+`Analytics` (no provider), `SoundHook` (no assets). Each is wired, tested, and does nothing.
+Any could ship "working" without anyone noticing it never fired — which is exactly how
+Magnetic shipped as a hazard with no effect, and how Shrinker shipped and never appeared.
+Tests now guard those two specific cases. The general lesson is that **wired and working
+are different claims**, and only one of them can be verified by looking.
