@@ -7,6 +7,14 @@ final class LineNode: SKNode {
     private var glowNode: SKShapeNode?
     private(set) var isFailing = false
     private let theme: Theme
+    private let effect: LineEffect
+
+    /// Sparks thrown from the drawing tip.
+    private var sparkNode: SKEmitterNode?
+    /// The travelling highlight used by `.comet`.
+    private var cometNode: SKShapeNode?
+    /// Seconds since the round began, driving the time-based effects.
+    private var elapsed: TimeInterval = 0
 
     /// The engine's points, decimated for drawing. A straight run needs two vertices,
     /// not one every 4pt: SKShapeNode tessellates a wide stroke per-vertex, and piling
@@ -30,10 +38,12 @@ final class LineNode: SKNode {
     /// Max perpendicular deviation (pt) before a point earns its own vertex.
     private static let simplifyTolerance: CGFloat = 0.6
 
-    init(theme: Theme) {
+    init(theme: Theme, effect: LineEffect = .plain) {
         self.theme = theme
+        self.effect = effect
         super.init()
         setupShape()
+        setupEffect()
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used — scenes are built in code") }
@@ -70,6 +80,102 @@ final class LineNode: SKNode {
             glow.alpha       = 0.4
             insertChild(glow, at: 0)
             glowNode = glow
+        }
+    }
+
+    // MARK: - Effects
+
+    private func setupEffect() {
+        switch effect {
+        case .plain, .prism:
+            break
+
+        case .spark:
+            let emitter = SKEmitterNode()
+            emitter.particleTexture = Self.softDot
+            // Tuned by looking at it. The first attempt used 5pt embers that shrank and
+            // faded within half a second — individually invisible against a line that
+            // already glows. Fewer, larger, slower-fading particles read as sparks;
+            // more of them read as fog.
+            emitter.particleBirthRate = 0            // only while the finger is moving
+            emitter.particleLifetime = 0.7
+            emitter.particleLifetimeRange = 0.4
+            emitter.particleSize = CGSize(width: 11, height: 11)
+            emitter.particleScaleSpeed = -0.9
+            emitter.particleAlphaSpeed = -1.2
+            emitter.particleSpeed = 46
+            emitter.particleSpeedRange = 32
+            emitter.emissionAngleRange = .pi * 2
+            emitter.particleColor = theme.lineColor
+            emitter.particleColorBlendFactor = 1
+            emitter.particleBlendMode = .add
+            emitter.zPosition = 2
+            emitter.targetNode = self          // embers stay put rather than trailing the tip
+            addChild(emitter)
+            sparkNode = emitter
+
+        case .comet:
+            let comet = SKShapeNode(circleOfRadius: theme.lineWidth * 1.5)
+            comet.fillColor = theme.lineColor
+            comet.strokeColor = .clear
+            comet.blendMode = .add
+            comet.alpha = 0
+            comet.zPosition = 3
+            addChild(comet)
+            cometNode = comet
+        }
+    }
+
+    /// A soft round particle, built once in code — the game ships no image assets.
+    private static let softDot: SKTexture = {
+        let side = 16
+        let size = CGSize(width: side, height: side)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { ctx in
+            let c = ctx.cgContext
+            let colours = [UIColor.white.cgColor, UIColor.white.withAlphaComponent(0).cgColor]
+            guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                            colors: colours as CFArray, locations: [0, 1]) else { return }
+            let mid = CGPoint(x: size.width / 2, y: size.height / 2)
+            c.drawRadialGradient(gradient, startCenter: mid, startRadius: 0,
+                                 endCenter: mid, endRadius: size.width / 2, options: [])
+        }
+        return SKTexture(image: image)
+    }()
+
+    /// Drives the time-based effects. Call once per frame from the scene while drawing.
+    func advance(dt: TimeInterval, isDrawing: Bool) {
+        guard !isFailing else { return }
+        elapsed += dt
+
+        switch effect {
+        case .plain:
+            break
+
+        case .prism:
+            // Hue drifts; saturation and brightness are taken from the theme's own line
+            // colour so the line stays as legible as it was against that background.
+            var h: CGFloat = 0, sat: CGFloat = 0, bri: CGFloat = 0, a: CGFloat = 0
+            theme.lineColor.getHue(&h, saturation: &sat, brightness: &bri, alpha: &a)
+            let hue = (h + CGFloat(elapsed) * 0.16).truncatingRemainder(dividingBy: 1)
+            let colour = SKColor(hue: hue, saturation: sat, brightness: bri, alpha: a)
+            shapeNode.strokeColor = colour
+            glowNode?.strokeColor = colour.withAlphaComponent(0.8)
+
+        case .spark:
+            sparkNode?.particleBirthRate = isDrawing ? 55 : 0
+            if let tip = renderPoints.last { sparkNode?.position = tip }
+
+        case .comet:
+            guard renderPoints.count >= 2, let comet = cometNode else { return }
+            // One sweep of the whole path every 1.6s.
+            let phase = (elapsed.truncatingRemainder(dividingBy: 1.6)) / 1.6
+            let index = phase * Double(renderPoints.count - 1)
+            let i = min(renderPoints.count - 2, Int(index))
+            let t = CGFloat(index - Double(i))
+            let a = renderPoints[i], b = renderPoints[i + 1]
+            comet.position = CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
+            comet.alpha = 0.9
         }
     }
 
@@ -178,6 +284,8 @@ final class LineNode: SKNode {
         glowNode?.strokeColor = failColor
 
         doomedNode?.path = nil
+        sparkNode?.particleBirthRate = 0
+        cometNode?.alpha = 0
         let flash = SKAction.sequence([
             .scale(to: 1.04, duration: 0.08),
             .scale(to: 1.0, duration: 0.08),
@@ -189,6 +297,10 @@ final class LineNode: SKNode {
 
     func reset() {
         isFailing = false
+        elapsed = 0
+        sparkNode?.particleBirthRate = 0
+        cometNode?.alpha = 0
+        shapeNode.strokeColor = theme.lineColor
         renderPoints = []
         renderSource = []
         consumedPointCount = 0

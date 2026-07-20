@@ -37,6 +37,11 @@ struct LevelConfig: Codable, Identifiable {
     /// still decode.
     let safeZones: [SafeZoneConfig]?
 
+    /// Cosmetic flourish on the drawn line. Optional; absent means plain.
+    let lineEffect: LineEffect?
+
+    var effect: LineEffect { lineEffect ?? .plain }
+
     var zones: [SafeZoneConfig] { safeZones ?? [] }
 
     static func load() -> [LevelConfig] {

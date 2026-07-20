@@ -169,3 +169,42 @@ final class LevelConfigTests: XCTestCase {
         }
     }
 }
+
+/// Line effects are decoration. They must stay decoration — and stay out of the way of
+/// the warnings the player needs to read.
+final class LineEffectTests: XCTestCase {
+
+    /// The doomed-tail warning is drawn over the line in the cutter's colour. A line busy
+    /// changing colour underneath it makes that warning hard to read, and that warning is
+    /// the whole reason a cut feels fair rather than stolen.
+    func testRecolouringEffectsStayOffCutterLevels() {
+        for level in LevelConfig.all where level.effect.recolours {
+            XCTAssertFalse(level.obstacleTypes.contains(.cutter),
+                           "level \(level.id) recolours the line on a cutter level, which "
+                           + "fights the doomed-tail warning for legibility")
+        }
+    }
+
+    /// A level should look the same every time you come back to it. Effects come from the
+    /// level data, never from a roll at runtime.
+    func testEffectsAreStableForAGivenLevel() {
+        for level in LevelConfig.all {
+            let first = LevelConfig.level(id: level.id)?.effect
+            let second = LevelConfig.level(id: level.id)?.effect
+            XCTAssertEqual(first, second)
+        }
+    }
+
+    func testLevelOneIsPlain() {
+        XCTAssertEqual(LevelConfig.level(id: 1)?.effect, .plain,
+                       "the tutorial should show the line at its plainest")
+    }
+
+    /// Sprinkled, not smeared: if most levels carry an effect it stops being a surprise.
+    func testEffectsAreSparing() {
+        let decorated = LevelConfig.all.filter { $0.effect != .plain }.count
+        XCTAssertLessThanOrEqual(decorated, LevelConfig.all.count / 2,
+                                 "effects on more than half the levels is wallpaper, not spark")
+        XCTAssertGreaterThan(decorated, 0)
+    }
+}

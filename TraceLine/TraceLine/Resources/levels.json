@@ -21,7 +21,8 @@
     ],
     "spawnInterval": 5.0,
     "maxObstacles": 2,
-    "gridSize": 16
+    "gridSize": 16,
+    "lineEffect": "spark"
   },
   {
     "id": 3,
@@ -88,7 +89,8 @@
         "y": 0.68,
         "radius": 0.12
       }
-    ]
+    ],
+    "lineEffect": "prism"
   },
   {
     "id": 6,
@@ -187,7 +189,8 @@
         "y": 0.26,
         "radius": 0.11
       }
-    ]
+    ],
+    "lineEffect": "comet"
   },
   {
     "id": 10,
@@ -236,7 +239,8 @@
         "y": 0.5,
         "radius": 0.14
       }
-    ]
+    ],
+    "lineEffect": "prism"
   },
   {
     "id": 12,
@@ -308,7 +312,8 @@
         "y": 0.3,
         "radius": 0.12
       }
-    ]
+    ],
+    "lineEffect": "spark"
   },
   {
     "id": 15,
@@ -417,7 +422,8 @@
         "y": 0.5,
         "radius": 0.11
       }
-    ]
+    ],
+    "lineEffect": "comet"
   },
   {
     "id": 19,
@@ -475,6 +481,7 @@
         "y": 0.22,
         "radius": 0.1
       }
-    ]
+    ],
+    "lineEffect": "spark"
   }
 ]

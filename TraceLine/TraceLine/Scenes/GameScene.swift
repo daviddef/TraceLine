@@ -204,7 +204,7 @@ final class GameScene: SKScene {
             node.zPosition = 2      // above the grid, below the line and the hazards
             addChild(node)
         }
-        lineNode = LineNode(theme: theme)
+        lineNode = LineNode(theme: theme, effect: levelConfig.effect)
         lineNode.zPosition = 10
         addChild(lineNode)
     }
@@ -242,6 +242,11 @@ final class GameScene: SKScene {
             spawnObstacle()
             spawnTimer = 0
         }
+
+        // Demo mode poses a finished stroke but is meant to look like a round in
+        // progress, so tip effects run there too — otherwise sparks never appear in a
+        // screenshot and cannot be judged.
+        lineNode.advance(dt: dt, isDrawing: stateMachine.phase == .drawing || isDemoPath)
 
         guard stateMachine.phase == .drawing else { return }
 

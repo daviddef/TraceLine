@@ -231,6 +231,28 @@ Worth prototyping the cheap one first and seeing whether the idea has legs.
 
 ---
 
+## The fading tail — a mode, not a flourish
+
+Proposed alongside the cosmetic line effects: "some lines slowly start disappearing at the
+tail end". The other suggestions (rainbow, sparks) are decoration. This one is not, and it
+is worth keeping separate.
+
+The same `points` array is three things at once: the wall you must not cross, the coverage
+that scores you, and what gets drawn. So a vanishing tail can only mean one of:
+
+1. **Fades visually, still blocks and still counts.** An invisible wall — it breaks design
+   principle 3 outright. Not an option.
+2. **Genuinely removed.** Coverage retracts as it goes, and your line stops being a
+   permanent obstacle. That is a different game: the tension inverts from "the board fills
+   up and you run out of room" to "outrun your own decay". It is Snake, and it is good —
+   but it is not this game's rules.
+3. **Removed as a wall, kept as coverage.** Needs a separate claimed-cells set, which is
+   precisely the change flagged under the Cutter as inverting that mechanic into a reward.
+
+Option 2 is the interesting one and deserves to exist as a **named mode** the player
+chooses, not a surprise attached to random levels. A player must know which rules they are
+playing under before they start drawing.
+
 ## World 3
 
 Worlds are data now: `worlds.json` plus a `world` on each level, one trail per world.
