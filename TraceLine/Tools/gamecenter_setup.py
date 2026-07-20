@@ -31,12 +31,19 @@ KEY_PATH = Path.home() / f".appstoreconnect/private_keys/AuthKey_{KEY_ID}.p8"
 
 BASE = "https://api.appstoreconnect.apple.com/v1"
 
-# Mirrors GameCenter.leaderboardID
-LEADERBOARD = {
-    "vendor_id": "traceline.highscore.alltime",
-    "reference_name": "TraceLine All-Time High Score",
-    "title": "All-Time High Score",
-}
+# Mirrors GameCenter.leaderboardID and GameCenter.endlessLeaderboardID
+LEADERBOARDS = [
+    {
+        "vendor_id": "traceline.highscore.alltime",
+        "reference_name": "TraceLine All-Time High Score",
+        "title": "All-Time High Score",
+    },
+    {
+        "vendor_id": "traceline.endless.alltime",
+        "reference_name": "TraceLine Endless",
+        "title": "Endless",
+    },
+]
 
 # Mirrors GameCenter.Achievement. Apple caps the total across all achievements at 1000.
 ACHIEVEMENTS = [
@@ -147,7 +154,7 @@ def existing(detail_id, kind):
     return out
 
 
-def create_leaderboard(detail_id, found):
+def create_leaderboard(detail_id, found, LEADERBOARD):
     vid = LEADERBOARD["vendor_id"]
     if vid in found:
         print(f"Leaderboard: {vid} already exists")
@@ -283,7 +290,9 @@ def main():
         sys.exit(f"API key not found at {KEY_PATH}")
     enable_app_id_capability()
     detail_id = game_center_detail()
-    create_leaderboard(detail_id, existing(detail_id, "gameCenterLeaderboards"))
+    boards = existing(detail_id, "gameCenterLeaderboards")
+    for board in LEADERBOARDS:
+        create_leaderboard(detail_id, boards, board)
     create_achievements(detail_id, existing(detail_id, "gameCenterAchievements"))
     upload_achievement_art(detail_id)
     total = sum(a["points"] for a in ACHIEVEMENTS)

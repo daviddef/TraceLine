@@ -3,8 +3,14 @@ import SpriteKit
 final class GameScene: SKScene {
 
     // MARK: - Configuration
-    let levelConfig: LevelConfig
+    /// Mutable because endless swaps in a new board every wave.
+    private(set) var levelConfig: LevelConfig
     let theme: Theme
+    let mode: GameMode
+
+    /// Endless only: which wave is on the board, and the score banked from earlier waves.
+    private(set) var wave = 1
+    private var bankedScore = 0
 
     // MARK: - Engine components
     private let stateMachine  = GameStateMachine()
@@ -29,8 +35,20 @@ final class GameScene: SKScene {
     /// Shelters on this board, resolved from the level's normalised config.
     private var safeZones: [SafeZone] = []
 
+    /// Held so a wave change can tear the board down and rebuild it.
+    private var boardNodes: [SKNode] = []
+
     // MARK: - Play area
     private var playRect: CGRect = .zero
+
+    #if DEBUG
+    /// Forces a wave change every couple of seconds so the transition can actually be
+    /// watched — a real one needs an unbroken drag that UI tests cannot produce.
+    private var autoAdvancesWaves: Bool {
+        CommandLine.arguments.contains("--debug-advance-waves")
+    }
+    private var autoAdvanceTimer: TimeInterval = 0
+    #endif
 
     /// Screenshot mode: the board is posed, so nothing new should spawn or drift in.
     private var isDemoPath: Bool {
@@ -42,9 +60,10 @@ final class GameScene: SKScene {
     }
 
     // MARK: - Init
-    init(levelConfig: LevelConfig, theme: Theme, size: CGSize) {
+    init(levelConfig: LevelConfig, theme: Theme, size: CGSize, mode: GameMode = .levels) {
         self.levelConfig = levelConfig
         self.theme = theme
+        self.mode = mode
         super.init(size: size)
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scaleMode = .resizeFill
@@ -196,23 +215,35 @@ final class GameScene: SKScene {
 
     private func setupScene() {
         backgroundColor = theme.background
-        addChild(GridNode(theme: theme, playRect: playRect, gridSize: levelConfig.gridSize))
+        buildBoard()
+        lineNode = LineNode(theme: theme, effect: levelConfig.effect)
+        lineNode.zPosition = 10
+        addChild(lineNode)
+    }
+
+    /// The grid and shelters for the current config. Rebuilt on every endless wave.
+    private func buildBoard() {
+        boardNodes.forEach { $0.removeFromParent() }
+        boardNodes.removeAll()
+
+        let grid = GridNode(theme: theme, playRect: playRect, gridSize: levelConfig.gridSize)
+        addChild(grid)
+        boardNodes.append(grid)
 
         safeZones = levelConfig.zones.map { $0.resolved(in: playRect) }
         for zone in safeZones {
             let node = SafeZoneNode(zone: zone, theme: theme)
             node.zPosition = 2      // above the grid, below the line and the hazards
             addChild(node)
+            boardNodes.append(node)
         }
-        lineNode = LineNode(theme: theme, effect: levelConfig.effect)
-        lineNode.zPosition = 10
-        addChild(lineNode)
     }
 
     private func setupHUD() {
         hudNode = HUDNode(theme: theme, levelConfig: levelConfig, sceneSize: size)
         hudNode.zPosition = 100
         addChild(hudNode)
+        if mode == .endless { hudNode.setWave(wave) }
 
         if theme.scanlines {
             let scanlines = ScanlineNode(size: size)
@@ -248,6 +279,13 @@ final class GameScene: SKScene {
         // screenshot and cannot be judged.
         lineNode.advance(dt: dt, isDrawing: stateMachine.phase == .drawing || isDemoPath)
 
+        #if DEBUG
+        if mode == .endless, autoAdvancesWaves, drawingEngine.pointCount >= 2 {
+            autoAdvanceTimer += dt
+            if autoAdvanceTimer >= 2.0 { autoAdvanceTimer = 0; advanceWave() }
+        }
+        #endif
+
         guard stateMachine.phase == .drawing else { return }
 
         applyCutters()
@@ -274,7 +312,10 @@ final class GameScene: SKScene {
                                targetFraction: levelConfig.targetCoverage,
                                barWidth: size.width - 48)
         if coverage >= levelConfig.targetCoverage {
-            triggerWin(coverage: coverage)
+            switch mode {
+            case .levels:  triggerWin(coverage: coverage)
+            case .endless: advanceWave()
+            }
         }
     }
 
@@ -313,7 +354,7 @@ final class GameScene: SKScene {
         switch drawingEngine.extend(to: pos, obstacles: obstacleDescriptors()) {
         case .ok:
             lineNode.update(points: drawingEngine.points)
-            score = Int(drawingEngine.totalDistance * 2)
+            score = bankedScore + Int(drawingEngine.totalDistance * 2)
             hudNode.updateScore(score)
         case .fail(let reason):
             triggerFail(reason: reason)
@@ -387,7 +428,8 @@ final class GameScene: SKScene {
 
     // MARK: - Round score
     private func makeRoundScore(stars: Int) -> RoundScore {
-        RoundScore(baseDistance: drawingEngine.totalDistance,
+        RoundScore(baseDistance: drawingEngine.totalDistance
+                                 + CGFloat(bankedScore) / 2,   // banked waves, in distance terms
                    coveragePct: coverage,
                    timeRemaining: max(0, timeRemaining),
                    nearMissCount: drawingEngine.nearMissCount,
@@ -400,6 +442,9 @@ final class GameScene: SKScene {
         stateMachine.transition(to: .failFlash, failReason: reason)
         Haptics.fail()
 
+        if mode == .endless {
+            GameCenter.submitEndless(score: score, wave: wave)
+        }
         let roundScore = makeRoundScore(stars: 0)
         Analytics.log(.levelFailed(id: levelConfig.id, reason: reason,
                                    coveragePercent: Int(coverage * 100)))
@@ -409,9 +454,61 @@ final class GameScene: SKScene {
                                       roundScore: roundScore,
                                       levelConfig: self.levelConfig,
                                       theme: self.theme,
-                                      size: self.size)
+                                      size: self.size,
+                                      mode: self.mode,
+                                      wave: self.wave)
             view.presentScene(scene, transition: .fade(withDuration: 0.3))
         }
+    }
+
+    // MARK: - Endless waves
+
+    /// The board is full, so it clears and the next one steps up — **without the finger
+    /// leaving the glass**. The line restarts from wherever the player already is, which
+    /// is what makes a whole run one unbroken stroke rather than a series of attempts.
+    private func advanceWave() {
+        bankedScore += Int(drawingEngine.totalDistance * 2)
+            + Endless.waveBonus(wave: wave, timeRemaining: timeRemaining)
+        wave += 1
+        levelConfig = Endless.config(forWave: wave)
+
+        // Clear the board.
+        obstacleNodes.forEach { recycleObstacle($0) }
+        spawnTimer = 0
+        timeRemaining = levelConfig.timeLimit
+        buildBoard()
+
+        // Keep drawing from where the finger already is.
+        let tip = drawingEngine.currentTip ?? .zero
+        drawingEngine.begin(at: tip)
+        lineNode.reset()
+        lineNode.update(points: drawingEngine.points)
+
+        coverage = 0
+        hudNode.setWave(wave)
+        hudNode.updateScore(bankedScore)
+        hudNode.updateCoverage(0, targetFraction: levelConfig.targetCoverage,
+                               barWidth: size.width - 48)
+        hudNode.resetTimer(to: levelConfig.timeLimit)
+        Haptics.win()
+        flashWaveBanner()
+    }
+
+    private func flashWaveBanner() {
+        let banner = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        banner.text = "WAVE \(wave)"
+        banner.fontSize = 40
+        banner.fontColor = theme.hudAccentColor
+        banner.verticalAlignmentMode = .center
+        banner.zPosition = 150
+        banner.alpha = 0
+        addChild(banner)
+        banner.run(.sequence([
+            .group([.fadeAlpha(to: 0.95, duration: 0.18), .scale(to: 1.15, duration: 0.18)]),
+            .wait(forDuration: 0.35),
+            .group([.fadeOut(withDuration: 0.4), .scale(to: 1.6, duration: 0.4)]),
+            .removeFromParent(),
+        ]))
     }
 
     // MARK: - Win

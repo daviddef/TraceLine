@@ -6,13 +6,18 @@ final class GameOverScene: SKScene {
     private let roundScore: RoundScore
     private let levelConfig: LevelConfig
     private let theme: Theme
+    private let mode: GameMode
+    private let wave: Int
 
     init(reason: FailReason, roundScore: RoundScore,
-         levelConfig: LevelConfig, theme: Theme, size: CGSize) {
+         levelConfig: LevelConfig, theme: Theme, size: CGSize,
+         mode: GameMode = .levels, wave: Int = 1) {
         self.reason = reason
         self.roundScore = roundScore
         self.levelConfig = levelConfig
         self.theme = theme
+        self.mode = mode
+        self.wave = wave
         super.init(size: size)
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scaleMode = .resizeFill
@@ -38,6 +43,23 @@ final class GameOverScene: SKScene {
         addChild(reasonLabel)
 
         let survived = max(0, levelConfig.timeLimit - roundScore.timeRemaining)
+        if mode == .endless {
+            // A run is measured in waves survived, not in one board's coverage.
+            let stats: [(String, String)] = [
+                (roundScore.base.formatted(), "Score"),
+                ("\(wave)", wave == 1 ? "Wave" : "Waves"),
+                ("\(Int(survived))s", "Survived"),
+            ]
+            for (i, stat) in stats.enumerated() {
+                addChild(statNode(value: stat.0, caption: stat.1,
+                                  at: CGPoint(x: CGFloat(i - 1) * 110, y: 40)))
+            }
+            addChild(ButtonNode(title: "↺  Run Again", theme: theme, name: "endless_button",
+                                position: CGPoint(x: 0, y: -80)))
+            addChild(ButtonNode(title: "‹  Home", theme: theme, name: "home_button",
+                                position: CGPoint(x: 0, y: -150), isPrimary: false))
+            return
+        }
         // Only the distance score is shown here. `total` folds in the speed and
         // clean-run bonuses, which are rewards for clearing a level — paying them out
         // on a failed round would report a bigger number than the HUD just showed.
@@ -85,6 +107,13 @@ final class GameOverScene: SKScene {
         Haptics.tap()
 
         switch name {
+        case "endless_button":
+            let scene = GameScene(levelConfig: Endless.config(forWave: 1),
+                                  theme: theme, size: size, mode: .endless)
+            view?.presentScene(scene, transition: .fade(withDuration: 0.3))
+        case "home_button":
+            view?.presentScene(HomeScene(theme: theme, size: size),
+                               transition: .fade(withDuration: 0.3))
         case "retry_button":
             let scene = GameScene(levelConfig: levelConfig, theme: theme, size: size)
             view?.presentScene(scene, transition: .fade(withDuration: 0.3))

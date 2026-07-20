@@ -147,15 +147,35 @@ Ordered by unknown-closed per hour spent.
 
 1. **Play twenty levels on a device and record where it breaks.** Closes question 1. The
    App Store screen recording forces most of this anyway.
-2. **Endless mode.** Closes question 2. Board never ends, hazards escalate on a curve, one
-   score, straight into the Game Center leaderboard — which today has almost nothing
-   meaningful to rank.
+2. ~~**Endless mode.**~~ **Shipped.** See below.
 3. **Audio.** `SoundHook` already marks every cue (`tap`, `fail`, `win`, `nearMiss`, `cut`)
    and no asset has ever existed. Best polish-per-hour on the list: a line that hums as it
    draws and cracks when it is cut is most of the game's felt quality.
 4. **Accessibility pass.** Closes question 3. Forgiveness radius on self-crossing, practice
    mode with no timer and no hazards, Reduce Motion honoured (line effects, scanlines), and
    a high-contrast option.
+
+### Endless, as built
+
+The design problem was that filling the board is a *dead end*: coverage counts cells the
+line crosses, so a full board has nowhere legal left to draw. Reaching the target had to
+become a doorway rather than a win.
+
+So endless is **waves**. Clear the target, the board wipes, difficulty steps up, and the
+line **restarts from wherever the finger already is** — without lifting. That makes a run
+one unbroken stroke drawn across many boards rather than a series of attempts, which is a
+better hook than "survive a board": not *how long can you last*, but *how long can you
+avoid letting go*.
+
+- Boards are generated per wave and **deterministic** — everyone's wave 7 is the same wave
+  7, which is the only thing that makes a leaderboard mean anything.
+- Hazards arrive one at a time in the order the levels teach them, so a player arriving
+  from World 2 meets them in an order they already know.
+- Difficulty climbs to wave 25 and then plateaus; past that a run is endurance at full
+  tilt rather than ever-rising demand.
+- Its own Game Center board (`traceline.endless.alltime`), and runs also post to the
+  all-time board.
+- Clearing faster banks more: the wave bonus pays out the clock you did not use.
 
 ## Next
 

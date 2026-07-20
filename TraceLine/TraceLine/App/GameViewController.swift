@@ -47,6 +47,19 @@ final class GameViewController: UIViewController {
             return
         }
 
+        // Straight into an endless run: --debug-endless [--debug-wave N]
+        if CommandLine.arguments.contains("--debug-endless") {
+            var wave = 1
+            if let i = CommandLine.arguments.firstIndex(of: "--debug-wave"),
+               i + 1 < CommandLine.arguments.count, let n = Int(CommandLine.arguments[i + 1]) {
+                wave = n
+            }
+            skView.presentScene(GameScene(levelConfig: Endless.config(forWave: wave),
+                                          theme: Theme.active, size: view.bounds.size,
+                                          mode: .endless))
+            return
+        }
+
         // Straight to the theme picker, for checking what locked cards say.
         if CommandLine.arguments.contains("--debug-themes") {
             skView.presentScene(ThemeSelectScene(theme: Theme.active, size: view.bounds.size))

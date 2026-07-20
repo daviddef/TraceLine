@@ -42,6 +42,23 @@ struct LevelConfig: Codable, Identifiable {
 
     var effect: LineEffect { lineEffect ?? .plain }
 
+    /// Built in code rather than decoded — endless generates its boards per wave.
+    init(id: Int, name: String?, world: Int, timeLimit: TimeInterval, targetCoverage: Float,
+         obstacleTypes: [ObstacleType], spawnInterval: TimeInterval, maxObstacles: Int,
+         gridSize: Int, safeZones: [SafeZoneConfig]? = nil, lineEffect: LineEffect? = nil) {
+        self.id = id
+        self.name = name
+        self.world = world
+        self.timeLimit = timeLimit
+        self.targetCoverage = targetCoverage
+        self.obstacleTypes = obstacleTypes
+        self.spawnInterval = spawnInterval
+        self.maxObstacles = maxObstacles
+        self.gridSize = gridSize
+        self.safeZones = safeZones
+        self.lineEffect = lineEffect
+    }
+
     var zones: [SafeZoneConfig] { safeZones ?? [] }
 
     static func load() -> [LevelConfig] {

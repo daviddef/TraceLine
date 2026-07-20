@@ -7,6 +7,8 @@ import UIKit
 enum GameCenter {
 
     static let leaderboardID = "traceline.highscore.alltime"
+    /// Endless is a different game from the levels, so it gets its own board.
+    static let endlessLeaderboardID = "traceline.endless.alltime"
 
     enum Achievement: String {
         case firstClear = "traceline.firstclear"
@@ -34,6 +36,18 @@ enum GameCenter {
                                   leaderboardIDs: [leaderboardID]) { error in
             if let error {
                 print("[GameCenter] score submission failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Endless runs go to their own leaderboard, and also count toward the all-time board
+    /// so a strong run still shows up for players who never touch the levels.
+    static func submitEndless(score: Int, wave: Int) {
+        guard isAuthenticated else { return }
+        GKLeaderboard.submitScore(score, context: wave, player: GKLocalPlayer.local,
+                                  leaderboardIDs: [endlessLeaderboardID, leaderboardID]) { error in
+            if let error {
+                print("[GameCenter] endless submission failed: \(error.localizedDescription)")
             }
         }
     }

@@ -14,7 +14,7 @@ final class HUDNode: SKNode {
     private var targetMarker = SKShapeNode()
 
     private let theme: Theme
-    private let maxTime: TimeInterval
+    private var maxTime: TimeInterval
     private let ringRadius: CGFloat = 22
 
     /// Set once the timer has gone red, so the colour isn't reassigned every frame.
@@ -124,6 +124,23 @@ final class HUDNode: SKNode {
     }
 
     // MARK: - Updates (driven from GameScene.update)
+
+    /// Endless replaces "LVL n" with the wave count.
+    func setWave(_ wave: Int) {
+        levelLabel.text = "WAVE \(wave)"
+        levelLabel.run(.sequence([.scale(to: 1.3, duration: 0.15), .scale(to: 1.0, duration: 0.15)]))
+    }
+
+    /// A new wave brings a fresh clock, so the ring has to rescale to it.
+    func resetTimer(to seconds: TimeInterval) {
+        maxTime = seconds
+        isInWarningState = false
+        timerFill.strokeColor = theme.hudAccentColor
+        timerLabel.fontColor = theme.hudTextColor
+        timerLabel.removeAllActions()
+        timerLabel.setScale(1)
+        updateTimer(remaining: seconds)
+    }
 
     func updateScore(_ score: Int) {
         scoreLabel.text = score.formatted()
