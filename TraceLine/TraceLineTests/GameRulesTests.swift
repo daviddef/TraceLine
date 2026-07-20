@@ -123,25 +123,27 @@ final class LevelConfigTests: XCTestCase {
         }
     }
 
-    /// Difficulty ramps *within* a world, not across the whole game. A new world opens
-    /// with a new idea, and a new idea has to be taught before it is combined — so World 2
-    /// deliberately starts gentler than World 1 ended.
-    func testDifficultyRampsMonotonicallyWithinEachWorld() {
-        for world in WorldConfig.all {
-            let targets = world.levels.map(\.targetCoverage)
-            XCTAssertEqual(targets, targets.sorted(),
-                           "world \(world.id): coverage targets should never go backwards")
-            let times = world.levels.map(\.timeLimit)
-            XCTAssertEqual(times, times.sorted(by: >),
-                           "world \(world.id): time limits should never grow")
-        }
-    }
-
-    func testEachWorldOpensGentlerThanThePreviousOneEnded() {
-        for (previous, next) in zip(WorldConfig.all, WorldConfig.all.dropFirst()) {
-            guard let ended = previous.levels.last, let opens = next.levels.first else { continue }
-            XCTAssertLessThan(opens.targetCoverage, ended.targetCoverage,
-                              "world \(next.id) should breathe before it bites")
+    /// Difficulty is measured in DifficultyCurveTests, which uses the real coverage
+    /// algorithm. Target coverage on its own is not a difficulty ranking — gridSize moves
+    /// it just as hard — so the old per-world ramp assertions were replaced rather than
+    /// repaired. The world-opens-gentler rule they enforced was wrong: it handed back
+    /// difficulty the player had already earned.
+    /// A level may thin the hazard mix, but only to put a *new* hazard in the spotlight.
+    /// Level 11 does exactly this: it drops from four types to two so the magnet is
+    /// legible, while the required drawing speed still rises. Clearing the board without
+    /// introducing anything is just handing back difficulty.
+    func testHazardMixOnlyNarrowsToIntroduceSomethingNew() {
+        var seenBefore: Set<ObstacleType> = []
+        var previousCount = 0
+        for level in LevelConfig.all {
+            let types = Set(level.obstacleTypes)
+            if types.count < previousCount {
+                XCTAssertFalse(types.subtracting(seenBefore).isEmpty,
+                               "level \(level.id) drops hazard types without introducing one — "
+                               + "that is a difficulty giveaway, not a spotlight")
+            }
+            seenBefore.formUnion(types)
+            previousCount = types.count
         }
     }
 

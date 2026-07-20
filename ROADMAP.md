@@ -260,6 +260,37 @@ moderation cost exceeds the value), multiplayer, iCloud sync, iPad.
 
 ---
 
+## The difficulty curve
+
+Measured, not guessed. `DifficultyCurveTests` runs a serpentine through the real coverage
+algorithm and reports what each level actually asks for. Two things fell out of that:
+
+**Passes needed ≈ targetCoverage × gridSize.** Coverage counts cells the line crosses, so
+a serpentine of R rows on an N×N grid covers about R/N. That makes `gridSize` exactly as
+strong a difficulty lever as the target percentage, and it means **target coverage alone
+is not a difficulty ranking** — 0.65 on a 20-grid and 0.65 on a 32-grid are different
+games. Both are now set together to land a chosen number of passes.
+
+**The old curve stalled and reset.** Measured: levels 2‑3‑4 all asked 7 passes, 5‑6 both
+10, 9‑10 both 13, and level 11 dropped back to 7 — identical to level 2. Six of ten steps
+in World 1 asked for nothing new, and World 2 spent until level 17 climbing back to where
+World 1 ended.
+
+The spine is now **required drawing speed**, which combines how much board you must fill
+with how long you get. It climbs 45 → 332 pt/s across the twenty levels (previously
+45 → 133), and time headroom tightens from about 9× down to 1.2×.
+
+**Teaching a mechanic is not the same as lowering difficulty** — this was got wrong once
+and enforced with a test. World 2 opens *harder* than World 1 closed; the magnet gets its
+spotlight by being nearly the only hazard on the board at level 11, not by making the
+board easy. A test now permits thinning the hazard mix only when a genuinely new hazard is
+being introduced.
+
+**Unvalidated:** the headroom figures assume a sustained drawing speed of about 400 pt/s.
+That is a model, not a measurement — nobody has been timed. If the back half proves
+impossible, the fix is to scale the time limits; the shape of the curve is independent of
+that constant.
+
 ## Risks
 
 **Level 1 has never been played by a human.** 50% coverage of a 15×15 grid in 60 seconds,
