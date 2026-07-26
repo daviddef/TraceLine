@@ -236,6 +236,7 @@ final class GameScene: SKScene {
 
     private func setupScene() {
         backgroundColor = theme.background
+        addChild(BackgroundNode(theme: theme, size: size))
         buildBoard()
         lineNode = LineNode(theme: theme, effect: levelConfig.effect)
         lineNode.zPosition = 10

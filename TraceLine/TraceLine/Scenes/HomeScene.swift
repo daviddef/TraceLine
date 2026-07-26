@@ -22,6 +22,7 @@ final class HomeScene: SKScene {
 
     override func didMove(to view: SKView) {
         backgroundColor = theme.background
+        addChild(BackgroundNode(theme: theme, size: size))
         addDecorativeLine()
 
         let title = SKLabelNode(fontNamed: Fonts.display(for: theme))

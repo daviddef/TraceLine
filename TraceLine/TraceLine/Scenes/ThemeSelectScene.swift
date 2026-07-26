@@ -20,6 +20,7 @@ final class ThemeSelectScene: SKScene {
     private func rebuild() {
         removeAllChildren()
         backgroundColor = theme.background
+        addChild(BackgroundNode(theme: theme, size: size))
 
         let back = SKLabelNode(fontNamed: Fonts.display(for: theme))
         back.text = "‹"

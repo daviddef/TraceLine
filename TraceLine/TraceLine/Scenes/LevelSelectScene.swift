@@ -57,6 +57,7 @@ final class LevelSelectScene: SKScene {
     private func rebuild() {
         removeAllChildren()
         backgroundColor = theme.background
+        addChild(BackgroundNode(theme: theme, size: size))
         addHeader()
         addTrail()
         for (i, level) in levels.enumerated() {
