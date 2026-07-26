@@ -61,11 +61,24 @@ final class ObstacleNode: SKNode {
         let color = theme.obstacleColors[obstacleType.themeIndex]
         switch obstacleType {
         case .blocker:
-            let shape = SKShapeNode(circleOfRadius: Self.circleRadius)
-            shape.fillColor = color
-            shape.strokeColor = .clear
-            addChild(shape)
-            if theme.obstacleGlow { addGlow(like: shape, color: color) }
+            // A mine: a round body ringed with spikes, so it reads as "do not touch" at a
+            // glance rather than as a neutral dot. The spike tips sit at the true hit radius
+            // so the silhouette does not promise a bigger danger than there is.
+            let r = Self.circleRadius
+            let spikes = SKShapeNode(path: Self.minePath(bodyR: r * 0.72, tipR: r, count: 8))
+            spikes.fillColor = color
+            spikes.strokeColor = .clear
+            addChild(spikes)
+            let body = SKShapeNode(circleOfRadius: r * 0.72)
+            body.fillColor = color
+            body.strokeColor = .clear
+            addChild(body)
+            if theme.obstacleGlow { addGlow(like: body, color: color) }
+            // A dark eye at the centre for depth — a hint of the hazard's own colour, shaded.
+            let eye = SKShapeNode(circleOfRadius: r * 0.28)
+            eye.fillColor = Self.shade(color, 0.4)
+            eye.strokeColor = .clear
+            addChild(eye)
 
         case .mover:
             let shape = SKShapeNode(rectOf: Self.moverSize, cornerRadius: 6)
@@ -73,6 +86,18 @@ final class ObstacleNode: SKNode {
             shape.strokeColor = .clear
             addChild(shape)
             if theme.obstacleGlow { addGlow(like: shape, color: color) }
+            // Chevrons at both ends, pointing outward: a puck that shuttles side to side,
+            // not a stationary bar. Shaded in the hazard's own colour so it works on any theme.
+            let ink = Self.shade(color, 0.45)
+            for dir in [CGFloat(-1), 1] {
+                let chevron = SKShapeNode(path: Self.chevronPath(dir: dir))
+                chevron.position = CGPoint(x: dir * (Self.moverSize.width / 2 - 9), y: 0)
+                chevron.strokeColor = ink
+                chevron.lineWidth = 2
+                chevron.lineCap = .round
+                chevron.fillColor = .clear
+                addChild(chevron)
+            }
 
         case .magnetic:
             let core = SKShapeNode(circleOfRadius: Self.magneticRadius)
@@ -164,21 +189,69 @@ final class ObstacleNode: SKNode {
             shape.run(flicker)
 
         case .shrinker:
-            let path = CGMutablePath()
             let s = Self.circleRadius
-            path.move(to: CGPoint(x: 0, y: -s))
-            path.addLine(to: CGPoint(x: s, y: 0))
-            path.addLine(to: CGPoint(x: 0, y: s))
-            path.addLine(to: CGPoint(x: -s, y: 0))
-            path.closeSubpath()
-            let shape = SKShapeNode(path: path)
+            let shape = SKShapeNode(path: Self.diamondPath(s))
             shape.fillColor = color
             shape.strokeColor = .clear
             addChild(shape)
             if theme.obstacleGlow { addGlow(like: shape, color: color) }
+            // A second diamond inside that pulses in and out — the space contracting, which
+            // is what a shrinker does. It rides above the body and does not affect the hit.
+            let inner = SKShapeNode(path: Self.diamondPath(s * 0.62))
+            inner.fillColor = Self.shade(color, 0.4)
+            inner.strokeColor = .clear
+            addChild(inner)
+            inner.run(.repeatForever(.sequence([
+                .scale(to: 0.45, duration: 0.7),
+                .scale(to: 1.0, duration: 0.7),
+            ])))
             // Rotation is safe as an SKAction: unlike a move action it never writes position.
             run(.repeatForever(.rotate(byAngle: .pi * 2, duration: 3)))
         }
+    }
+
+    // MARK: - Shape helpers
+
+    /// A diamond (square on its point) of half-diagonal `s`.
+    private static func diamondPath(_ s: CGFloat) -> CGPath {
+        let p = CGMutablePath()
+        p.move(to: CGPoint(x: 0, y: -s))
+        p.addLine(to: CGPoint(x: s, y: 0))
+        p.addLine(to: CGPoint(x: 0, y: s))
+        p.addLine(to: CGPoint(x: -s, y: 0))
+        p.closeSubpath()
+        return p
+    }
+
+    /// `count` triangular spikes ringing a body of radius `bodyR`, tips reaching `tipR`.
+    private static func minePath(bodyR: CGFloat, tipR: CGFloat, count: Int) -> CGPath {
+        let p = CGMutablePath()
+        let half = (.pi / CGFloat(count)) * 0.55        // half the angular width of a spike base
+        for i in 0..<count {
+            let a = CGFloat(i) / CGFloat(count) * .pi * 2
+            p.move(to: CGPoint(x: cos(a - half) * bodyR, y: sin(a - half) * bodyR))
+            p.addLine(to: CGPoint(x: cos(a) * tipR, y: sin(a) * tipR))
+            p.addLine(to: CGPoint(x: cos(a + half) * bodyR, y: sin(a + half) * bodyR))
+            p.closeSubpath()
+        }
+        return p
+    }
+
+    /// A small ">" chevron pointing in `dir` (+1 right, −1 left), centred on the origin.
+    private static func chevronPath(dir: CGFloat) -> CGPath {
+        let p = CGMutablePath()
+        p.move(to: CGPoint(x: -3 * dir, y: 4))
+        p.addLine(to: CGPoint(x: 3 * dir, y: 0))
+        p.addLine(to: CGPoint(x: -3 * dir, y: -4))
+        return p
+    }
+
+    /// A darker shade of a colour — the same hue multiplied toward black, so hazard detail
+    /// reads as shading on any theme rather than a fixed ink that fights some palettes.
+    private static func shade(_ color: SKColor, _ factor: CGFloat) -> SKColor {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return SKColor(red: r * factor, green: g * factor, blue: b * factor, alpha: a)
     }
 
     /// SpriteKit has no native bloom, so a scaled translucent copy stands in for a glow.
