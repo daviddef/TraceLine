@@ -73,6 +73,16 @@ final class PlayerProgress {
         defaults.set(key.rawValue, forKey: "active_theme")
     }
 
+    // MARK: - Preferences
+
+    /// Sound effects on/off. Defaults to on — but the hardware silent switch always
+    /// wins regardless, because the audio session is `.ambient` (see SoundHook).
+    /// `object(forKey:)` distinguishes "never set" (nil → default on) from an explicit off.
+    var soundEnabled: Bool {
+        get { defaults.object(forKey: "sound_enabled") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "sound_enabled") }
+    }
+
     /// Total stars earned across the whole game.
     var totalStars: Int { LevelConfig.all.reduce(0) { $0 + stars(for: $1.id) } }
 
