@@ -52,14 +52,18 @@ final class WorldTests: XCTestCase {
     }
 
     /// Each world should introduce something, or it is just the last one with bigger
-    /// numbers — which the research is explicit is not enough to hold anyone.
+    /// numbers — which the research is explicit is not enough to hold anyone. "Something"
+    /// is not only a new hazard type: World 3 adds wind and World 4 turns out the lights,
+    /// both real ideas that are level mechanics rather than obstacles.
     func testEachWorldIntroducesSomethingNew() {
-        var seen: Set<ObstacleType> = []
+        var seen: Set<String> = []
         for world in WorldConfig.all {
-            let here = Set(world.levels.flatMap(\.obstacleTypes))
+            var here = Set(world.levels.flatMap { $0.obstacleTypes.map(\.rawValue) })
+            if world.levels.contains(where: \.isDark) { here.insert("darkness") }
+            if world.levels.contains(where: \.hasWind) { here.insert("wind") }
             if world.id > 1 {
                 XCTAssertFalse(here.subtracting(seen).isEmpty,
-                               "world \(world.id) introduces no hazard World \(world.id - 1) "
+                               "world \(world.id) introduces nothing World \(world.id - 1) "
                                + "did not already have — it is the last world with bigger numbers")
             }
             seen.formUnion(here)

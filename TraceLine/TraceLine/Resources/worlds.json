@@ -13,5 +13,10 @@
     "id": 3,
     "name": "The Burn",
     "subtitle": "The board stops trying to end you and starts trying to outlast you. Reach a shelter before the flame does."
+  },
+  {
+    "id": 4,
+    "name": "The Dark",
+    "subtitle": "The lights go out. You draw by the light you carry, and the board hides what it's about to throw."
   }
 ]

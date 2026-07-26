@@ -42,6 +42,9 @@ final class GameScene: SKScene {
     /// The flame drawn at the burning end of the line, while a fuse is alight.
     private var flameNode: SKEmitterNode?
 
+    /// World 4's darkness veil, when the level is dark. Its torch follows the drawing tip.
+    private var darknessNode: DarknessNode?
+
     /// A camera so the whole view can be shaken for impact. At the origin it changes
     /// nothing; a shake offsets it briefly.
     private let cameraNode = SKCameraNode()
@@ -206,6 +209,19 @@ final class GameScene: SKScene {
             addChild(obs)
             placed.append(spot)
         }
+
+        // In the dark, pin the torch to the tip and pose one hazard inside it, so a still
+        // shows the effect it is built around: a lit bubble revealing a hazard, the rest
+        // of the placed hazards swallowed by the dark.
+        if levelConfig.isDark, let tip = drawingEngine.points.last {
+            darknessNode?.moveTorch(to: tip)
+            let lit = ObstacleNode(type: .blocker, theme: theme)
+            lit.position = CGPoint(x: tip.x + 46, y: tip.y + 30)
+            lit.fallSpeed = 0
+            lit.zPosition = 5
+            obstacleNodes.append(lit)
+            addChild(lit)
+        }
     }
 
     /// Finds a point inside the play area that clears both the drawn line and any
@@ -250,6 +266,14 @@ final class GameScene: SKScene {
 
         drawingEngine.wind = levelConfig.wind
         if levelConfig.hasWind { addWindIndicator() }
+
+        if levelConfig.isDark {
+            let dark = DarknessNode(sceneSize: size, theme: theme)
+            dark.zPosition = 8          // over the board and hazards, under the self-lit line (10)
+            dark.moveTorch(to: CGPoint(x: playRect.midX, y: playRect.midY))
+            addChild(dark)
+            darknessNode = dark
+        }
     }
 
     /// A drifting streak field so the wind is visible before it bites — principle 3.
@@ -343,6 +367,12 @@ final class GameScene: SKScene {
         // progress, so tip effects run there too — otherwise sparks never appear in a
         // screenshot and cannot be judged.
         lineNode.advance(dt: dt, isDrawing: stateMachine.phase == .drawing || isDemoPath)
+
+        // In the dark, the torch rides the drawing tip; before a stroke starts it waits
+        // at the board's centre where the line will begin.
+        if let darknessNode, let tip = drawingEngine.points.last {
+            darknessNode.moveTorch(to: tip)
+        }
 
         #if DEBUG
         if mode == .endless, autoAdvancesWaves, drawingEngine.pointCount >= 2 {

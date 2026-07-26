@@ -60,6 +60,14 @@ final class GameViewController: UIViewController {
             return
         }
 
+        // Straight to a world's level map: --debug-map 4
+        if let i = CommandLine.arguments.firstIndex(of: "--debug-map"),
+           i + 1 < CommandLine.arguments.count, let id = Int(CommandLine.arguments[i + 1]) {
+            PlayerProgress.shared.unlockAll()
+            skView.presentScene(LevelSelectScene(theme: Theme.active, size: view.bounds.size, worldID: id))
+            return
+        }
+
         // Straight to the theme picker, for checking what locked cards say.
         if CommandLine.arguments.contains("--debug-themes") {
             skView.presentScene(ThemeSelectScene(theme: Theme.active, size: view.bounds.size))
@@ -69,6 +77,18 @@ final class GameViewController: UIViewController {
         // Straight to the settings screen, for checking its layout and toggles.
         if CommandLine.arguments.contains("--debug-settings") {
             skView.presentScene(SettingsScene(theme: Theme.active, size: view.bounds.size))
+            return
+        }
+
+        // A dark level built in code, for iterating on World 4's torch before its levels
+        // are authored. Pair with --demo-path to pose a line and hazards in the dark.
+        if CommandLine.arguments.contains("--debug-dark") {
+            let level = LevelConfig(id: 999, name: "Blackout", world: 4, timeLimit: 60,
+                                    targetCoverage: 0.55, obstacleTypes: [.blocker, .mover],
+                                    spawnInterval: 2.4, maxObstacles: 5, gridSize: 8,
+                                    dark: true)
+            skView.presentScene(GameScene(levelConfig: level, theme: Theme.active,
+                                          size: view.bounds.size))
             return
         }
 

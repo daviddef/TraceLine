@@ -128,21 +128,29 @@ final class LevelConfigTests: XCTestCase {
     /// it just as hard — so the old per-world ramp assertions were replaced rather than
     /// repaired. The world-opens-gentler rule they enforced was wrong: it handed back
     /// difficulty the player had already earned.
-    /// A level may thin the hazard mix, but only to put a *new* hazard in the spotlight.
+    /// A level may thin the hazard mix, but only to put something *new* in the spotlight.
     /// Level 11 does exactly this: it drops from four types to two so the magnet is
-    /// legible, while the required drawing speed still rises. Clearing the board without
-    /// introducing anything is just handing back difficulty.
+    /// legible, while the required drawing speed still rises. Level 31 does it harder,
+    /// stripping to a single hazard so the player can learn to draw in the dark — darkness
+    /// is the new idea being spotlighted, even though it is a level mechanic rather than a
+    /// hazard type. Clearing the board without introducing anything is just handing back
+    /// difficulty.
     func testHazardMixOnlyNarrowsToIntroduceSomethingNew() {
         var seenBefore: Set<ObstacleType> = []
+        var seenDark = false, seenWind = false
         var previousCount = 0
         for level in LevelConfig.all {
             let types = Set(level.obstacleTypes)
             if types.count < previousCount {
-                XCTAssertFalse(types.subtracting(seenBefore).isEmpty,
-                               "level \(level.id) drops hazard types without introducing one — "
-                               + "that is a difficulty giveaway, not a spotlight")
+                let newHazard = !types.subtracting(seenBefore).isEmpty
+                let newMechanic = (level.isDark && !seenDark) || (level.hasWind && !seenWind)
+                XCTAssertTrue(newHazard || newMechanic,
+                              "level \(level.id) drops hazard types without introducing anything "
+                              + "new — that is a difficulty giveaway, not a spotlight")
             }
             seenBefore.formUnion(types)
+            if level.isDark { seenDark = true }
+            if level.hasWind { seenWind = true }
             previousCount = types.count
         }
     }
@@ -174,6 +182,16 @@ final class LevelConfigTests: XCTestCase {
         XCTAssertFalse(windy.isEmpty, "wind is implemented but no level uses it")
         for level in windy {
             XCTAssertEqual(level.world, 3, "wind escaped World 3 at level \(level.id)")
+        }
+    }
+
+    /// Darkness is World 4's idea. It should actually be used, and only there — a stray
+    /// dark level in an earlier world would be a difficulty spike with no world to explain it.
+    func testDarknessIsUsedAndStaysInWorldFour() {
+        let dark = LevelConfig.all.filter(\.isDark)
+        XCTAssertFalse(dark.isEmpty, "darkness is implemented but no level uses it")
+        for level in dark {
+            XCTAssertEqual(level.world, 4, "darkness escaped World 4 at level \(level.id)")
         }
     }
 

@@ -771,5 +771,196 @@
     ],
     "windX": 1.8,
     "windY": 0
+  },
+  {
+    "id": 31,
+    "name": "Dusk",
+    "world": 4,
+    "timeLimit": 15.6,
+    "targetCoverage": 0.62,
+    "obstacleTypes": [
+      "blocker"
+    ],
+    "spawnInterval": 2.8,
+    "maxObstacles": 4,
+    "gridSize": 38,
+    "dark": true
+  },
+  {
+    "id": 32,
+    "name": "Gloom",
+    "world": 4,
+    "timeLimit": 15.4,
+    "targetCoverage": 0.63,
+    "obstacleTypes": [
+      "blocker",
+      "mover"
+    ],
+    "spawnInterval": 2.7,
+    "maxObstacles": 4,
+    "gridSize": 38,
+    "dark": true
+  },
+  {
+    "id": 33,
+    "name": "Nightfall",
+    "world": 4,
+    "timeLimit": 16.3,
+    "targetCoverage": 0.63,
+    "obstacleTypes": [
+      "mover",
+      "cutter"
+    ],
+    "spawnInterval": 2.6,
+    "maxObstacles": 5,
+    "gridSize": 40,
+    "dark": true
+  },
+  {
+    "id": 34,
+    "name": "Moonless",
+    "world": 4,
+    "timeLimit": 16.1,
+    "targetCoverage": 0.64,
+    "obstacleTypes": [
+      "blocker",
+      "mover",
+      "cutter"
+    ],
+    "spawnInterval": 2.5,
+    "maxObstacles": 5,
+    "gridSize": 40,
+    "dark": true,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.5,
+        "radius": 0.12
+      }
+    ]
+  },
+  {
+    "id": 35,
+    "name": "Eclipse",
+    "world": 4,
+    "timeLimit": 15.9,
+    "targetCoverage": 0.64,
+    "obstacleTypes": [
+      "mover",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 2.4,
+    "maxObstacles": 5,
+    "gridSize": 40,
+    "dark": true
+  },
+  {
+    "id": 36,
+    "name": "Pitch",
+    "world": 4,
+    "timeLimit": 16.2,
+    "targetCoverage": 0.65,
+    "obstacleTypes": [
+      "blocker",
+      "mover",
+      "shrinker"
+    ],
+    "spawnInterval": 2.3,
+    "maxObstacles": 6,
+    "gridSize": 40,
+    "dark": true
+  },
+  {
+    "id": 37,
+    "name": "Umbra",
+    "world": 4,
+    "timeLimit": 16.5,
+    "targetCoverage": 0.65,
+    "obstacleTypes": [
+      "mover",
+      "magnetic",
+      "cutter"
+    ],
+    "spawnInterval": 2.2,
+    "maxObstacles": 6,
+    "gridSize": 42,
+    "dark": true
+  },
+  {
+    "id": 38,
+    "name": "Void",
+    "world": 4,
+    "timeLimit": 16.3,
+    "targetCoverage": 0.66,
+    "obstacleTypes": [
+      "blocker",
+      "mover",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 2.1,
+    "maxObstacles": 6,
+    "gridSize": 42,
+    "dark": true,
+    "safeZones": [
+      {
+        "x": 0.3,
+        "y": 0.62,
+        "radius": 0.12
+      },
+      {
+        "x": 0.72,
+        "y": 0.34,
+        "radius": 0.11
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "name": "Abyss",
+    "world": 4,
+    "timeLimit": 16.1,
+    "targetCoverage": 0.66,
+    "obstacleTypes": [
+      "mover",
+      "magnetic",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 2.0,
+    "maxObstacles": 7,
+    "gridSize": 42,
+    "dark": true
+  },
+  {
+    "id": 40,
+    "name": "Starless",
+    "world": 4,
+    "timeLimit": 16.4,
+    "targetCoverage": 0.67,
+    "obstacleTypes": [
+      "blocker",
+      "mover",
+      "magnetic",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 1.9,
+    "maxObstacles": 7,
+    "gridSize": 42,
+    "dark": true,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.72,
+        "radius": 0.11
+      },
+      {
+        "x": 0.5,
+        "y": 0.28,
+        "radius": 0.11
+      }
+    ]
   }
 ]

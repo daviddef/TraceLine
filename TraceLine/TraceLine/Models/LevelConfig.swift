@@ -58,11 +58,17 @@ struct LevelConfig: Codable, Identifiable {
     var wind: CGVector { CGVector(dx: CGFloat(windX ?? 0), dy: CGFloat(windY ?? 0)) }
     var hasWind: Bool { (windX ?? 0) != 0 || (windY ?? 0) != 0 }
 
+    /// World 4's darkness: the board goes dark but for a torch around the drawing tip.
+    /// Optional; absent means the lights are on.
+    let dark: Bool?
+
+    var isDark: Bool { dark ?? false }
+
     /// Built in code rather than decoded — endless generates its boards per wave.
     init(id: Int, name: String?, world: Int, timeLimit: TimeInterval, targetCoverage: Float,
          obstacleTypes: [ObstacleType], spawnInterval: TimeInterval, maxObstacles: Int,
          gridSize: Int, safeZones: [SafeZoneConfig]? = nil, lineEffect: LineEffect? = nil,
-         windX: Float? = nil, windY: Float? = nil) {
+         windX: Float? = nil, windY: Float? = nil, dark: Bool? = nil) {
         self.id = id
         self.name = name
         self.world = world
@@ -76,6 +82,7 @@ struct LevelConfig: Codable, Identifiable {
         self.lineEffect = lineEffect
         self.windX = windX
         self.windY = windY
+        self.dark = dark
     }
 
     var zones: [SafeZoneConfig] { safeZones ?? [] }
