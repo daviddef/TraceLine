@@ -41,6 +41,10 @@ final class GameScene: SKScene {
 
     /// The flame drawn at the burning end of the line, while a fuse is alight.
     private var flameNode: SKEmitterNode?
+
+    /// A camera so the whole view can be shaken for impact. At the origin it changes
+    /// nothing; a shake offsets it briefly.
+    private let cameraNode = SKCameraNode()
     /// How fast the flame eats the line, in points per second. Slower than a player can
     /// draw, or it is a delayed death rather than a race.
     private static let flameSpeed: CGFloat = 190
@@ -236,6 +240,8 @@ final class GameScene: SKScene {
 
     private func setupScene() {
         backgroundColor = theme.background
+        camera = cameraNode
+        addChild(cameraNode)
         addChild(BackgroundNode(theme: theme, size: size))
         buildBoard()
         lineNode = LineNode(theme: theme, effect: levelConfig.effect)
@@ -458,6 +464,7 @@ final class GameScene: SKScene {
 
         lineNode.update(points: drawingEngine.points)
         Haptics.cut()
+        shake(power: 6)
     }
 
     /// Marks the stretch of line the cutters are going to take, live, while the player
@@ -496,6 +503,7 @@ final class GameScene: SKScene {
                     recycleObstacle(fuse)          // the fuse is spent once it lights the line
                     lineNode.update(points: drawingEngine.points)
                     Haptics.fail()                 // a heavier cue than a cut: you are now in trouble
+                    shake(power: 10)
                     showFlame()
                     break
                 }
@@ -544,6 +552,43 @@ final class GameScene: SKScene {
         fire.position = drawingEngine.burnFront ?? .zero
         addChild(fire)
         flameNode = fire
+    }
+
+    /// A brief camera shake. `power` is the peak offset in points.
+    private func shake(power: CGFloat) {
+        cameraNode.removeAction(forKey: "shake")
+        var steps: [SKAction] = []
+        var p = power
+        while p > 0.5 {
+            steps.append(.move(to: CGPoint(x: .random(in: -p...p), y: .random(in: -p...p)),
+                               duration: 0.035))
+            p *= 0.72
+        }
+        steps.append(.move(to: .zero, duration: 0.04))
+        cameraNode.run(.sequence(steps), withKey: "shake")
+    }
+
+    /// A ring of particles thrown from a point — used on a clear and a wave advance.
+    private func burst(at point: CGPoint, color: SKColor) {
+        let b = SKEmitterNode()
+        b.particleTexture = LineNode.softDot
+        b.numParticlesToEmit = 40
+        b.particleBirthRate = 2000
+        b.particleLifetime = 0.6
+        b.particleLifetimeRange = 0.3
+        b.particleSize = CGSize(width: 10, height: 10)
+        b.particleScaleSpeed = -1.4
+        b.particleAlphaSpeed = -1.6
+        b.particleSpeed = 260
+        b.particleSpeedRange = 120
+        b.emissionAngleRange = .pi * 2
+        b.particleColor = color
+        b.particleColorBlendFactor = 1
+        b.particleBlendMode = .add
+        b.position = point
+        b.zPosition = 20
+        addChild(b)
+        b.run(.sequence([.wait(forDuration: 1.0), .removeFromParent()]))
     }
 
     private func hideFlame() {
@@ -621,6 +666,8 @@ final class GameScene: SKScene {
                                barWidth: size.width - 48)
         hudNode.resetTimer(to: levelConfig.timeLimit)
         Haptics.win()
+        burst(at: drawingEngine.currentTip ?? .zero, color: theme.hudAccentColor)
+        shake(power: 5)
         flashWaveBanner()
     }
 
@@ -647,6 +694,8 @@ final class GameScene: SKScene {
         spawnTimer = 0
         Haptics.win()
 
+        burst(at: drawingEngine.currentTip ?? .zero, color: SKColor(hex: "#22c55e"))
+        shake(power: 5)
         let stars = starsEarned(coverage: coverage)
         let roundScore = makeRoundScore(stars: stars)
         PlayerProgress.shared.recordCompletion(levelId: levelConfig.id,
