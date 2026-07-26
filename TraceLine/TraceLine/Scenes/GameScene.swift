@@ -217,6 +217,18 @@ final class GameScene: SKScene {
             placed.append(spot)
         }
 
+        // Pose a hunter aimed at the tip, so a still shows the arrowhead locked onto its
+        // prey. It does not home in demo mode, so it stays where it is posed.
+        if levelConfig.obstacleTypes.contains(.hunter), let tip = drawingEngine.points.last {
+            let h = ObstacleNode(type: .hunter, theme: theme)
+            let spot = CGPoint(x: playRect.midX + 50, y: playRect.midY + 30)
+            h.position = spot
+            h.zRotation = atan2(tip.y - spot.y, tip.x - spot.x)
+            h.zPosition = 5
+            obstacleNodes.append(h)
+            addChild(h)
+        }
+
         // In the dark, pin the torch to the tip and pose one hazard inside it, so a still
         // shows the effect it is built around: a lit bubble revealing a hazard, the rest
         // of the placed hazards swallowed by the dark.
@@ -357,8 +369,11 @@ final class GameScene: SKScene {
 
         guard stateMachine.phase == .drawing || stateMachine.phase == .idle else { return }
 
-        // Obstacles
+        // Obstacles. Hunters need to know where the tip is before they move. In a posed
+        // demo they hold their placed position (and aim) rather than wandering off.
+        let tip = drawingEngine.points.last
         for obs in obstacleNodes {
+            if obs.obstacleType == .hunter && !isDemoPath { obs.huntTarget = tip }
             obs.update(dt: dt, playRect: playRect)
             obs.rebound(off: safeZones)
             if obs.isOffBoard(playRect) { recycleObstacle(obs) }
@@ -834,6 +849,8 @@ final class GameScene: SKScene {
 
         guard lethalObstacleCount < levelConfig.maxObstacles else { return }
 
+        if type == .hunter { return spawnHunter() }
+
         let obs = ObstacleNode(type: type, theme: theme)
 
         // Spec: keep at least 60pt between obstacles at spawn. Try a handful of
@@ -842,6 +859,18 @@ final class GameScene: SKScene {
         obs.position = CGPoint(x: x, y: playRect.maxY + 30)
         obs.fallSpeed = 60 + CGFloat(levelConfig.id) * 3
         obs.startFalling(in: playRect.width)
+        obs.zPosition = 5
+        obstacleNodes.append(obs)
+        addChild(obs)
+    }
+
+    /// A hunter enters at the top of the board and then steers toward the drawing tip
+    /// every frame (see the update loop). It enters where a faller would, so it is on
+    /// screen and telegraphed before it starts closing in.
+    private func spawnHunter() {
+        guard let x = findSpawnX() else { return }
+        let obs = ObstacleNode(type: .hunter, theme: theme)
+        obs.position = CGPoint(x: x, y: playRect.maxY - 20)
         obs.zPosition = 5
         obstacleNodes.append(obs)
         addChild(obs)

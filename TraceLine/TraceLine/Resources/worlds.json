@@ -18,5 +18,10 @@
     "id": 4,
     "name": "The Dark",
     "subtitle": "The lights go out. You draw by the light you carry, and the board hides what it's about to throw."
+  },
+  {
+    "id": 5,
+    "name": "The Hunt",
+    "subtitle": "The board stops waiting for you to run into it. Hunters lock onto your line and close in \u2014 you can't just dodge, you have to lose them."
   }
 ]

@@ -35,6 +35,7 @@ enum Endless {
         if wave >= 9  { types.append(.magnetic) }
         if wave >= 12 { types.append(.shrinker) }
         if wave >= 15 { types.append(.fuse) }
+        if wave >= 18 { types.append(.hunter) }
         return types
     }
 

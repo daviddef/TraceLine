@@ -1,7 +1,7 @@
 import Foundation
 
 enum ObstacleType: String, Codable, CaseIterable {
-    case blocker, mover, magnetic, shrinker, cutter, fuse
+    case blocker, mover, magnetic, shrinker, cutter, fuse, hunter
 
     var themeIndex: Int {
         switch self {
@@ -11,8 +11,12 @@ enum ObstacleType: String, Codable, CaseIterable {
         case .shrinker: return 3
         case .cutter:   return 4
         case .fuse:     return 5
+        case .hunter:   return 6
         }
     }
+
+    /// Hunters steer toward the drawing tip instead of falling — World 5's mechanic.
+    var hunts: Bool { self == .hunter }
 
     /// Cutters sever the line instead of ending the round. Every other type is a wall.
     var severs: Bool { self == .cutter }

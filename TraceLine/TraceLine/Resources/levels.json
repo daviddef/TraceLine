@@ -962,5 +962,187 @@
         "radius": 0.11
       }
     ]
+  },
+  {
+    "id": 41,
+    "name": "Stalked",
+    "world": 5,
+    "timeLimit": 14.6,
+    "targetCoverage": 0.62,
+    "obstacleTypes": [
+      "hunter"
+    ],
+    "spawnInterval": 2.6,
+    "maxObstacles": 3,
+    "gridSize": 42
+  },
+  {
+    "id": 42,
+    "name": "Scented",
+    "world": 5,
+    "timeLimit": 14.9,
+    "targetCoverage": 0.63,
+    "obstacleTypes": [
+      "hunter",
+      "mover"
+    ],
+    "spawnInterval": 2.5,
+    "maxObstacles": 4,
+    "gridSize": 42
+  },
+  {
+    "id": 43,
+    "name": "Prowl",
+    "world": 5,
+    "timeLimit": 15.2,
+    "targetCoverage": 0.63,
+    "obstacleTypes": [
+      "hunter",
+      "blocker"
+    ],
+    "spawnInterval": 2.5,
+    "maxObstacles": 4,
+    "gridSize": 44
+  },
+  {
+    "id": 44,
+    "name": "Pursuit",
+    "world": 5,
+    "timeLimit": 15.5,
+    "targetCoverage": 0.64,
+    "obstacleTypes": [
+      "hunter",
+      "mover",
+      "cutter"
+    ],
+    "spawnInterval": 2.4,
+    "maxObstacles": 4,
+    "gridSize": 44,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.5,
+        "radius": 0.12
+      }
+    ]
+  },
+  {
+    "id": 45,
+    "name": "Snare",
+    "world": 5,
+    "timeLimit": 15.3,
+    "targetCoverage": 0.64,
+    "obstacleTypes": [
+      "hunter",
+      "blocker",
+      "mover"
+    ],
+    "spawnInterval": 2.3,
+    "maxObstacles": 4,
+    "gridSize": 44
+  },
+  {
+    "id": 46,
+    "name": "Flush",
+    "world": 5,
+    "timeLimit": 15.1,
+    "targetCoverage": 0.65,
+    "obstacleTypes": [
+      "hunter",
+      "mover",
+      "shrinker"
+    ],
+    "spawnInterval": 2.2,
+    "maxObstacles": 5,
+    "gridSize": 44
+  },
+  {
+    "id": 47,
+    "name": "Ambush",
+    "world": 5,
+    "timeLimit": 15.4,
+    "targetCoverage": 0.65,
+    "obstacleTypes": [
+      "hunter",
+      "magnetic",
+      "cutter"
+    ],
+    "spawnInterval": 2.2,
+    "maxObstacles": 5,
+    "gridSize": 46
+  },
+  {
+    "id": 48,
+    "name": "Pack",
+    "world": 5,
+    "timeLimit": 15.6,
+    "targetCoverage": 0.66,
+    "obstacleTypes": [
+      "hunter",
+      "blocker",
+      "mover",
+      "cutter"
+    ],
+    "spawnInterval": 2.1,
+    "maxObstacles": 5,
+    "gridSize": 46,
+    "safeZones": [
+      {
+        "x": 0.3,
+        "y": 0.6,
+        "radius": 0.11
+      },
+      {
+        "x": 0.72,
+        "y": 0.35,
+        "radius": 0.11
+      }
+    ]
+  },
+  {
+    "id": 49,
+    "name": "Cornered",
+    "world": 5,
+    "timeLimit": 15.4,
+    "targetCoverage": 0.66,
+    "obstacleTypes": [
+      "hunter",
+      "mover",
+      "magnetic",
+      "shrinker"
+    ],
+    "spawnInterval": 2.0,
+    "maxObstacles": 5,
+    "gridSize": 46
+  },
+  {
+    "id": 50,
+    "name": "Apex",
+    "world": 5,
+    "timeLimit": 15.7,
+    "targetCoverage": 0.68,
+    "obstacleTypes": [
+      "hunter",
+      "blocker",
+      "mover",
+      "magnetic",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 1.9,
+    "maxObstacles": 5,
+    "gridSize": 46,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.72,
+        "radius": 0.11
+      },
+      {
+        "x": 0.5,
+        "y": 0.28,
+        "radius": 0.11
+      }
+    ]
   }
 ]

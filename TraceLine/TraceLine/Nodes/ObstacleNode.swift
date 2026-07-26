@@ -8,6 +8,11 @@ final class ObstacleNode: SKNode {
     /// Horizontal speed, movers only. Sign is the current direction of travel.
     private var driftSpeed: CGFloat = 0
 
+    /// Hunters only. The point they steer toward — the scene sets this to the drawing tip
+    /// each frame. How fast they close is `Self.hunterSpeed`.
+    var huntTarget: CGPoint?
+    static let hunterSpeed: CGFloat = 58
+
     /// Cutters only. Direction is held separately from speed rather than being read off
     /// its sign: a stationary cutter still faces somewhere, and the lane shadow depends
     /// on which way it is going, not how fast.
@@ -26,6 +31,7 @@ final class ObstacleNode: SKNode {
         case .magnetic:           return Self.magneticRadius
         case .mover:              return Self.moverSize.width / 2
         case .cutter:             return Self.cutterSize.width / 2
+        case .hunter:             return Self.hunterRadius
         }
     }
 
@@ -41,6 +47,7 @@ final class ObstacleNode: SKNode {
     /// the player can see would be the game cheating.
     static let magneticFieldRadius: CGFloat = 78
     private static let fuseRadius: CGFloat = 13
+    private static let hunterRadius: CGFloat = 13
     /// Max deflection at the core, falling to zero at the field's edge. Tuned by looking
     /// at it: at 3.2 the bend was under 2pt — thinner than the line itself, so the field
     /// looked like decoration. At 18 the line visibly leans, and anything inside roughly
@@ -207,6 +214,31 @@ final class ObstacleNode: SKNode {
             ])))
             // Rotation is safe as an SKAction: unlike a move action it never writes position.
             run(.repeatForever(.rotate(byAngle: .pi * 2, duration: 3)))
+
+        case .hunter:
+            // An arrowhead that points at its prey (the node's zRotation is aimed at the
+            // tip each frame), with a bright eye near the nose and a slow menacing pulse.
+            let r = Self.hunterRadius
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: r, y: 0))                       // nose
+            path.addLine(to: CGPoint(x: -r * 0.8, y: r * 0.78))      // upper barb
+            path.addLine(to: CGPoint(x: -r * 0.35, y: 0))            // notched tail
+            path.addLine(to: CGPoint(x: -r * 0.8, y: -r * 0.78))     // lower barb
+            path.closeSubpath()
+            let shape = SKShapeNode(path: path)
+            shape.fillColor = color
+            shape.strokeColor = .clear
+            addChild(shape)
+            if theme.obstacleGlow { addGlow(like: shape, color: color) }
+            let eye = SKShapeNode(circleOfRadius: r * 0.24)
+            eye.fillColor = SKColor(hex: "#fff3d6")
+            eye.strokeColor = .clear
+            eye.position = CGPoint(x: r * 0.32, y: 0)
+            addChild(eye)
+            shape.run(.repeatForever(.sequence([
+                .scale(to: 1.09, duration: 0.5),
+                .scale(to: 1.0, duration: 0.5),
+            ])))
         }
     }
 
@@ -330,6 +362,9 @@ final class ObstacleNode: SKNode {
             let margin = Self.cutterSize.width * 1.5
             return position.x < playRect.minX - margin || position.x > playRect.maxX + margin
         }
+        // Hunters chase the tip and never fall away; the level's obstacle cap bounds how
+        // many can be on the board at once.
+        if obstacleType == .hunter { return false }
         return position.y < playRect.minY - 40
     }
 
@@ -349,6 +384,22 @@ final class ObstacleNode: SKNode {
         // Cutters run their lane instead of falling.
         if obstacleType == .cutter {
             position.x += crossDirection * crossSpeed * CGFloat(dt)
+            return
+        }
+
+        // Hunters steer toward the drawing tip rather than falling. Slow enough to route
+        // around, relentless enough that you cannot just sit still.
+        if obstacleType == .hunter {
+            guard let target = huntTarget else { return }
+            let dx = target.x - position.x, dy = target.y - position.y
+            let dist = (dx * dx + dy * dy).squareRoot()
+            if dist > 0.5 {
+                let step = min(Self.hunterSpeed * CGFloat(dt), dist)
+                position.x += dx / dist * step
+                position.y += dy / dist * step
+            }
+            // Face the prey, so the wedge visibly points at where it is going.
+            zRotation = atan2(dy, dx)
             return
         }
 
@@ -372,6 +423,8 @@ final class ObstacleNode: SKNode {
         switch obstacleType {
         case .blocker, .shrinker:
             return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.circleRadius))
+        case .hunter:
+            return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.hunterRadius))
         case .fuse:
             return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.fuseRadius),
                                       ignites: true)
