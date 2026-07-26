@@ -1,7 +1,16 @@
 # TraceLine — Roadmap
 
-Status: 20 July 2026. **Version 1.0 is live on the App Store** (`READY_FOR_SALE`). Twenty
-levels across two worlds, endless mode, ~4,000 lines of Swift, 128 unit tests + 5 UI.
+Status: 27 July 2026.
+
+- **v1.0** — live on the App Store (`READY_FOR_SALE`), the original two worlds.
+- **v1.1** — `WAITING_FOR_REVIEW`. Worlds 3 & 4, endless mode, a rebuilt difficulty curve,
+  audio, a settings + accessibility screen, juice, hazard art, and a UX overhaul (game over
+  auto-restarts, a real pause button, Free Play). Manual release.
+- **v1.2** — in progress on `main`, not yet built or versioned: **World 5 (The Hunt)**, real
+  **bloom** behind a Glow setting, and a **win celebration**. Marketing version held at 1.1
+  so it cannot collide with the build in review.
+
+Fifty levels across five worlds, endless mode, 137 unit tests + 5 UI.
 
 This is the **post-launch enrichment phase**. The brief from here: *richer, more fun,
 better graphics, more worlds*. The plan below is organised around those four, in the order
@@ -18,26 +27,26 @@ different, and they are about depth rather than existence.
 
 ### More worlds — the headline ask
 
-Two worlds teach two ideas (dodge, then lose control). A third is designed, and its
-mechanic's engine core is already built and tested — this is the cheapest large win on the
-board. **Worlds are the spine of "richer": each one is a new verb, not a new coat of
-paint.** The discipline that got us here holds — a world must introduce a genuinely new
-hazard or a test fails.
+**Five worlds now, up from two.** Each is a new verb, not a new coat of paint: dodge, lose
+control, race the flame, draw blind, lose the pack. **Worlds are the spine of "richer",** and
+the discipline that got us here holds — a world must introduce a genuinely new mechanic or a
+test fails. World 6 is the next one (candidates in the spine table below).
 
 ### Better graphics — the most-visible ask
 
-The rendering is honest but flat: a stand-in glow made of a scaled translucent copy (the
-code itself says "in production, use SKEffectNode with CIFilter for proper glow"), no depth
-behind the play area, hazards that are solid shapes. Real bloom, an ambient background, and
-richer hazard art are the highest visible-polish-per-hour available, and they lift every
-screen at once rather than one feature.
+Mostly delivered. The stand-in glow (a scaled translucent copy — the code literally said
+"in production, use SKEffectNode with CIFilter") is now **real bloom**, a Gaussian-blurred
+halo behind the sharp line, gated behind a Glow setting so a weaker device can drop it. The
+play area gained an **ambient background** for depth, and the flat hazards gained **character**
+(blocker → mine, mover → chevrons, shrinker → contracting diamond). Still open: hazard art
+could go further, and bloom is line-only — hazards still wear the cheap glow.
 
 ### More fun — the felt ask
 
-Fun is the hardest to schedule because it is the hardest to measure, but two things move it
-cheaply and are already scaffolded: **audio** (every cue is marked, no asset has ever
-existed — a line that hums and cracks is most of a game's feel) and **juice** (screen
-shake on a cut, particles on a clear, a satisfying wave transition).
+Delivered the scaffolded pair and more: **audio** (all five cues synthesized in code, mixed
+under the player's music, obeying the silent switch), **juice** (camera shake on cuts, bursts
+on clears and wave advances), and a **win celebration** (palette confetti + star sparkles).
+The felt quality is no longer a stub.
 
 ### Still true, still unmeasured
 
@@ -62,16 +71,24 @@ Unchanged, and worth re-reading before adding anything.
 
 ## The spine: what each world takes from you
 
-Naming this made World 3 obvious.
+Naming this made every world after the second obvious. The discipline is enforced by a
+test: a new world must introduce a genuinely new mechanic — a hazard type, or darkness, or
+wind — not just bigger numbers.
 
 | World | Takes | The lesson |
 |---|---|---|
 | 1 — The Grid | Your **round** | Hazards end you. Learn to dodge. |
 | 2 — The Field | Your **control** | The magnet bends your input. The line stops going where you point. |
-| **3 — The Burn** | Your **line, over time** | The first hazard you can *beat* rather than merely avoid. |
+| 3 — The Burn | Your **line, over time** | Light a fuse and race the flame to a shelter. The first hazard you can *beat* rather than merely avoid. |
+| 4 — The Dark | Your **sight** | The board goes black; you draw by a torch on the tip. Hazards lurk unseen until your light reaches them. |
+| 5 — The Hunt | The **safety of dodging** | Hunters lock onto your tip and close in. You cannot sidestep once — you have to lose them. |
 
-Principle 4's second clause — "a race you were given a chance to win" — is written into the
-principles and used by nothing. World 3 is where it becomes the whole point.
+Principle 4's second clause — "a race you were given a chance to win" — became the whole
+point in World 3 (outrun the flame) and again in World 5 (outrun the pack).
+
+**World 6 — the next thing to take.** Open candidates: a board whose space *contracts* (the
+shrinker escalated to a world), or hazards that are *invisible until they move*. The test
+above will reject anything that is only World 5 with a bigger grid.
 
 ---
 
@@ -182,16 +199,24 @@ Ordered so each step compounds the next.
   Again" tap; a real pause button with Resume / Restart / Level Select / Home; and **Free
   Play**, a home entry that opens every world, level and theme (free for now, gate later).
 
+**Shipped since (on `main`, queued for 1.2):**
+
+- ✅ **World 5 — The Hunt.** Takes the safety of dodging: the Hunter homes onto the drawing
+  tip. Ten levels, difficulty climbing 646 → 738 pt/s; endless adds it at wave 18.
+- ✅ **Real bloom.** The fake glow is now a `CIGaussianBlur` halo inside an `SKEffectNode`,
+  behind a Glow setting (default on). Line-only for now. Costs a per-frame blur — the whole
+  reason the toggle exists — so a weaker device can drop back to the cheap glow.
+- ✅ **Win celebration.** Palette confetti scaled to stars earned, a sparkle + bounce on each
+  star, and the ambient background the win screen was missing.
+
 **Next:**
 
-1. **Better graphics: real bloom.** Replace the fake glow with an `SKEffectNode` +
-   `CIGaussianBlur` bloom pass, gated behind a graphics quality setting (the Settings screen
-   now exists to hold that toggle). Theme-limited to the dark palettes, so it degrades to the
-   current look on light themes rather than fighting them.
-2. **World 5 — the next thing to take.** W1 took the round, W2 control, W3 the line over
-   time, W4 sight. A world must still introduce a genuinely new mechanic, not bigger numbers
-   — candidates: hazards that *hunt* the tip (takes the safety of dodging), or a board whose
-   space contracts (the shrinker escalated to a world).
+1. **Cut 1.2.** Bump the marketing version, build, ship to TestFlight (App Store review waits
+   on 1.1 clearing). Verify bloom holds 60 fps on a real minimum-spec device before deciding
+   whether it stays default-on.
+2. **World 6.** The next mechanic to take — see the spine table.
+3. **More polish.** Hazard bloom (not just the line), a first-time tutorial for the two rules,
+   and the still-unmeasured difficulty assumption (~400 pt/s sustained, nobody timed).
 
 Also shipped earlier: **endless mode** (below), and a difficulty curve rebuilt to be
 measurably monotonic — now climbing unbroken across all four worlds (45 → 646 pt/s).
