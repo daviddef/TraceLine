@@ -243,16 +243,21 @@ avoid letting go*.
   all-time board.
 - Clearing faster banks more: the wave bonus pays out the clock you did not use.
 
-## Next
+## Next — longer-horizon backlog
 
-5. **World 3 — The Burn.** The Fuse, wind, ten levels. Designed above.
-6. **Daily seeded challenge.** One deterministic board per day, shared globally. Best
-   evidence-to-effort ratio in the research, and it gives the leaderboard a reason to exist.
-7. **Settings screen.** The wireframe has one; the architecture spec's file list does not,
-   so it was never built. Accessibility toggles need somewhere to live, which makes this a
-   dependency of item 4 rather than a nicety.
-8. **Per-level leaderboards and personal bests on the map.** The map shows stars but not
-   your best score. Cheap, and it makes replay legible.
+Beyond the immediate enrichment sequence above.
+
+- ✅ ~~**World 3 — The Burn.**~~ Shipped (1.1). Worlds 4 (The Dark) and 5 (The Hunt) followed.
+- ✅ ~~**Settings screen.**~~ Shipped (1.1): sound, reduce-motion and glow toggles.
+- **Daily seeded challenge.** One deterministic board per day, shared globally. Best
+  evidence-to-effort ratio in the research; the deterministic wave generator endless already
+  uses is most of the machinery, and it gives the leaderboard a reason to exist.
+- **Per-level leaderboards and personal bests on the map.** The map shows stars but not
+  your best score. Cheap, and it makes replay legible.
+- **First-time tutorial.** The two rules, taught on an empty board — the game fails you fast,
+  so a cold open is punishing. *(In progress as immediate polish.)*
+- **Measure the difficulty assumption.** The curve assumes ~400 pt/s sustained and nobody has
+  been timed. Instrument a real run and check the model against a human. *(In progress.)*
 
 ## Later
 

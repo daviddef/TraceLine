@@ -289,11 +289,22 @@ final class ObstacleNode: SKNode {
     /// SpriteKit has no native bloom, so a scaled translucent copy stands in for a glow.
     /// A proper SKEffectNode + CIFilter bloom would be the production upgrade.
     private func addGlow(like node: SKShapeNode, color: SKColor) {
-        guard let glow = node.copy() as? SKShapeNode else { return }
-        glow.fillColor = color.withAlphaComponent(0.25)
-        glow.strokeColor = .clear
-        glow.setScale(1.6)
-        insertChild(glow, at: 0)
+        // With Glow on, a soft additive halo made of a few stacked, scaled copies. Real
+        // Gaussian bloom is a per-frame blur we cannot afford once per hazard, but on shapes
+        // this small the stacked-copy halo reads the same — and matches the line's bloom.
+        // With Glow off, the single cheap copy that shipped before.
+        let bloom = PlayerProgress.shared.glowEnabled
+        let layers: [(scale: CGFloat, alpha: CGFloat)] = bloom
+            ? [(1.4, 0.30), (1.9, 0.18), (2.5, 0.10)]
+            : [(1.6, 0.25)]
+        for layer in layers {
+            guard let glow = node.copy() as? SKShapeNode else { continue }
+            glow.fillColor = color.withAlphaComponent(layer.alpha)
+            glow.strokeColor = .clear
+            glow.blendMode = bloom ? .add : .alpha
+            glow.setScale(layer.scale)
+            insertChild(glow, at: 0)
+        }
     }
 
     // MARK: - Movement
