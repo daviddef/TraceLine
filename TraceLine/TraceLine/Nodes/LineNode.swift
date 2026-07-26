@@ -76,14 +76,32 @@ final class LineNode: SKNode {
 
         if theme.lineGlowWidth > 0 {
             let glow = SKShapeNode()
-            glow.strokeColor = theme.lineShadowColor
-            glow.lineWidth   = theme.lineWidth + theme.lineGlowWidth
-            glow.lineCap     = theme.lineCap
-            glow.lineJoin    = .round
-            glow.fillColor   = .clear
-            glow.alpha       = 0.4
-            insertChild(glow, at: 0)
+            glow.lineWidth = theme.lineWidth + theme.lineGlowWidth
+            glow.lineCap   = theme.lineCap
+            glow.lineJoin  = .round
+            glow.fillColor = .clear
             glowNode = glow
+
+            // Real bloom (a Gaussian-blurred halo) when Glow is on; the cheaper fixed halo
+            // when it is off. The sharp line is drawn over whichever, so it stays crisp —
+            // only the halo behind it is soft. The glow's path is set every frame, so the
+            // effect node cannot rasterize once; that per-frame blur is the cost the setting
+            // exists to let a weaker device drop.
+            if PlayerProgress.shared.glowEnabled,
+               let blur = CIFilter(name: "CIGaussianBlur",
+                                   parameters: ["inputRadius": min(6, theme.lineGlowWidth * 0.6)]) {
+                glow.strokeColor = theme.lineColor   // bloom carries the line's own colour
+                glow.alpha = 0.85
+                let bloom = SKEffectNode()
+                bloom.filter = blur
+                bloom.shouldRasterize = false
+                bloom.addChild(glow)
+                insertChild(bloom, at: 0)
+            } else {
+                glow.strokeColor = theme.lineShadowColor
+                glow.alpha = 0.4
+                insertChild(glow, at: 0)
+            }
         }
     }
 

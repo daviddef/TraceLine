@@ -36,6 +36,9 @@ final class SettingsScene: SKScene {
             ("Reduce motion", "toggle_motion",
              { PlayerProgress.shared.reduceMotion },
              { PlayerProgress.shared.reduceMotion = $0 }),
+            ("Glow", "toggle_glow",
+             { PlayerProgress.shared.glowEnabled },
+             { PlayerProgress.shared.glowEnabled = $0 }),
         ]
 
         var y: CGFloat = 60

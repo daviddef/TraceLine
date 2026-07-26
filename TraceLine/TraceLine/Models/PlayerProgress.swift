@@ -93,6 +93,14 @@ final class PlayerProgress {
         set { defaults.set(newValue, forKey: "reduce_motion") }
     }
 
+    /// Real bloom on the drawn line — a soft luminous halo instead of the cheaper fixed
+    /// glow. On by default; the one graphics knob a weaker device can drop. `object(forKey:)`
+    /// distinguishes "never set" (nil → default on) from an explicit off.
+    var glowEnabled: Bool {
+        get { defaults.object(forKey: "glow_enabled") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "glow_enabled") }
+    }
+
     /// Free Play: every world, level and theme unlocked, no earning required. Free for now;
     /// this is the flag a future purchase would flip. While it is on, the unlock checks
     /// below all answer true, so the whole game is open without touching the real star
