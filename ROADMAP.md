@@ -165,24 +165,36 @@ working as intended: World 3 cannot be "World 2 with bigger numbers" without a r
 
 Ordered so each step compounds the next.
 
-1. **World 3 — The Burn.** The headline "more worlds" ask, and the Fuse's engine core is
-   already built. Make the Fuse a real hazard type, give it a flame visual, add wind, author
-   ten levels. Designed in full below.
-2. **Better graphics: real bloom.** Replace the fake glow with an `SKEffectNode` +
-   `CIGaussianBlur` bloom pass. One change, lifts every neon element on every screen. Gate
-   it behind a quality setting so weaker devices can drop it.
-3. **Ambient background + hazard art.** Depth behind the play area (a slow parallax field),
-   and hazards that read as objects rather than flat shapes.
-4. **Audio.** Every cue (`tap`, `fail`, `win`, `nearMiss`, `cut`) is already marked and no
-   asset has ever existed. A line that hums as it draws and cracks when it is cut is most of
-   the game's felt quality.
-5. **Juice.** Screen shake on a cut, a burst on a clear, a weightier wave transition. Cheap,
-   and it is most of what "more fun" means in the hand.
-6. **Settings + accessibility.** Somewhere to turn graphics down, plus the forgiveness
-   radius and practice mode that open the game to players who currently cannot play it.
+**Shipped (1.1):**
 
-Shipped since this list was last written: **endless mode** (below), and a difficulty curve
-rebuilt to be measurably monotonic.
+- ✅ **World 3 — The Burn.** The Fuse is a real hazard; wind is its second mechanic; ten
+  levels. Designed in full below.
+- ✅ **World 4 — The Dark.** Takes *sight*: the board goes black but for a torch on the
+  drawing tip. Reuses every hazard; the only new tech is a crop-masked veil. Ten levels.
+- ✅ **Ambient background + hazard art.** Depth behind the play area, and the plainest
+  hazards (blocker → mine, mover → chevrons, shrinker → contracting diamond) given character.
+- ✅ **Audio.** All five cues synthesized in code (`Tools/generate_audio.py`), played through
+  an `.ambient` session that mixes with music and obeys the silent switch.
+- ✅ **Juice.** Camera shake on cuts/ignites, particle bursts on clears and wave advances.
+- ✅ **Settings + accessibility.** Sound toggle and a Reduce Motion switch that also honours
+  the system setting.
+- ✅ **UX overhaul.** Game over is now a translucent overlay that auto-restarts — no "Try
+  Again" tap; a real pause button with Resume / Restart / Level Select / Home; and **Free
+  Play**, a home entry that opens every world, level and theme (free for now, gate later).
+
+**Next:**
+
+1. **Better graphics: real bloom.** Replace the fake glow with an `SKEffectNode` +
+   `CIGaussianBlur` bloom pass, gated behind a graphics quality setting (the Settings screen
+   now exists to hold that toggle). Theme-limited to the dark palettes, so it degrades to the
+   current look on light themes rather than fighting them.
+2. **World 5 — the next thing to take.** W1 took the round, W2 control, W3 the line over
+   time, W4 sight. A world must still introduce a genuinely new mechanic, not bigger numbers
+   — candidates: hazards that *hunt* the tip (takes the safety of dodging), or a board whose
+   space contracts (the shrinker escalated to a world).
+
+Also shipped earlier: **endless mode** (below), and a difficulty curve rebuilt to be
+measurably monotonic — now climbing unbroken across all four worlds (45 → 646 pt/s).
 
 ### Endless, as built
 
