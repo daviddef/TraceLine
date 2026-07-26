@@ -158,7 +158,8 @@ final class LineNode: SKNode {
     }
 
     /// A soft round particle, built once in code — the game ships no image assets.
-    private static let softDot: SKTexture = {
+    /// A soft round particle, shared with the scene's flame so both look alike.
+    static let softDot: SKTexture = {
         let side = 16
         let size = CGSize(width: side, height: side)
         let renderer = UIGraphicsImageRenderer(size: size)

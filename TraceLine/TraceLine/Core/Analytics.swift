@@ -65,6 +65,7 @@ extension FailReason {
         case .lineCrossed:  return "line_crossed"
         case .obstacleHit:  return "obstacle_hit"
         case .timeExpired:  return "time_expired"
+        case .burnedOut:    return "burned_out"
         }
     }
 }

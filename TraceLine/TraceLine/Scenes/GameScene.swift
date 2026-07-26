@@ -31,12 +31,19 @@ final class GameScene: SKScene {
 
     /// Two at once is already busy: each crosses the whole board.
     private static let maxConcurrentCutters = 2
+    private static let maxConcurrentFuses = 1
 
     /// Shelters on this board, resolved from the level's normalised config.
     private var safeZones: [SafeZone] = []
 
     /// Held so a wave change can tear the board down and rebuild it.
     private var boardNodes: [SKNode] = []
+
+    /// The flame drawn at the burning end of the line, while a fuse is alight.
+    private var flameNode: SKEmitterNode?
+    /// How fast the flame eats the line, in points per second. Slower than a player can
+    /// draw, or it is a delayed death rather than a race.
+    private static let flameSpeed: CGFloat = 190
 
     // MARK: - Play area
     private var playRect: CGRect = .zero
@@ -166,12 +173,26 @@ final class GameScene: SKScene {
             updateDoomedTail()
         }
 
+        // A fuse level poses a *burning* line: ignite it partway and advance the flame so
+        // the screenshot catches the line mid-burn with the flame particle alight. Only
+        // the type != .fuse filter below keeps a stray flame icon off the board.
+        if levelConfig.obstacleTypes.contains(.fuse), drawingEngine.pointCount > 8 {
+            let midX = playRect.midX
+            drawingEngine.ignite(where: { a, b in
+                GeometryHelpers.segmentsIntersect(a, b, CGPoint(x: midX, y: -1000),
+                                                  CGPoint(x: midX, y: 1000))
+            })
+            drawingEngine.advanceBurn(distance: 90)
+            lineNode.update(points: drawingEngine.points)
+            showFlame()
+        }
+
         // Pose the rest in the gaps between passes. A *lethal* obstacle touching the line
         // would mean the round had already ended, so a screenshot showing that misstates
         // the rules — keep those clear of the drawn path.
         // Seed with the magnet so nothing else is posed on top of it or inside its field.
         var placed: [CGPoint] = obstacleNodes.filter { $0.obstacleType == .magnetic }.map(\.position)
-        for type in levelConfig.obstacleTypes.prefix(3) where !type.severs && type != .magnetic {
+        for type in levelConfig.obstacleTypes.prefix(3) where type.isLethal && type != .magnetic {
             guard let spot = clearSpot(awayFrom: placed) else { continue }
             let obs = ObstacleNode(type: type, theme: theme)
             obs.position = spot
@@ -219,6 +240,43 @@ final class GameScene: SKScene {
         lineNode = LineNode(theme: theme, effect: levelConfig.effect)
         lineNode.zPosition = 10
         addChild(lineNode)
+
+        drawingEngine.wind = levelConfig.wind
+        if levelConfig.hasWind { addWindIndicator() }
+    }
+
+    /// A drifting streak field so the wind is visible before it bites — principle 3.
+    private func addWindIndicator() {
+        let dir = levelConfig.wind
+        let mag = (dir.dx * dir.dx + dir.dy * dir.dy).squareRoot()
+        guard mag > 0 else { return }
+        let nx = dir.dx / mag, ny = dir.dy / mag
+
+        let tint = theme.obstacleColors[ObstacleType.fuse.themeIndex]   // wind is World 3's, so wear its colour
+        let field = SKNode()
+        field.zPosition = 1
+        for _ in 0..<22 {
+            let streak = SKShapeNode(rectOf: CGSize(width: 34, height: 2), cornerRadius: 1)
+            streak.fillColor = tint
+            streak.strokeColor = .clear
+            streak.zRotation = atan2(ny, nx)
+            streak.position = CGPoint(x: .random(in: playRect.minX...playRect.maxX),
+                                      y: .random(in: playRect.minY...playRect.maxY))
+            let travel: CGFloat = 90
+            let dur = Double.random(in: 1.0...1.6)
+            streak.run(.repeatForever(.sequence([
+                .group([.moveBy(x: nx * travel, y: ny * travel, duration: dur),
+                        .sequence([.fadeAlpha(to: 0.5, duration: dur * 0.4),
+                                   .fadeAlpha(to: 0, duration: dur * 0.6)])]),
+                .run { [weak streak] in
+                    streak?.position = CGPoint(x: .random(in: self.playRect.minX...self.playRect.maxX),
+                                               y: .random(in: self.playRect.minY...self.playRect.maxY))
+                },
+            ])))
+            field.addChild(streak)
+        }
+        addChild(field)
+        boardNodes.append(field)
     }
 
     /// The grid and shelters for the current config. Rebuilt on every endless wave.
@@ -290,6 +348,10 @@ final class GameScene: SKScene {
 
         applyCutters()
         updateDoomedTail()
+        if case .fail = applyFuses(dt: dt) {
+            triggerFail(reason: .burnedOut)
+            return
+        }
 
         // An obstacle can fall onto a finger that isn't moving, so the tip is
         // re-checked every frame and not only on touchesMoved.
@@ -422,6 +484,73 @@ final class GameScene: SKScene {
                             color: theme.obstacleColors[ObstacleType.cutter.themeIndex])
     }
 
+    /// The Fuse: contact ignites the line rather than ending the round, and a flame then
+    /// eats toward the fingertip until the player reaches a shelter. Everything but the
+    /// flame visual is engine work already built and tested.
+    private func applyFuses(dt: TimeInterval) -> DrawResult {
+        if !drawingEngine.isBurning {
+            for fuse in obstacleNodes where fuse.obstacleType.ignites {
+                let d = fuse.descriptor()
+                if drawingEngine.ignite(where: { d.intersectsSegment(from: $0, to: $1) }) {
+                    recycleObstacle(fuse)          // the fuse is spent once it lights the line
+                    lineNode.update(points: drawingEngine.points)
+                    Haptics.fail()                 // a heavier cue than a cut: you are now in trouble
+                    showFlame()
+                    break
+                }
+            }
+            return .ok
+        }
+
+        // Already burning. Reaching shelter with the tip puts it out.
+        if let tip = drawingEngine.currentTip, safeZones.contains(where: { $0.contains(tip) }) {
+            drawingEngine.extinguish()
+            hideFlame()
+            return .ok
+        }
+
+        switch drawingEngine.advanceBurn(distance: Self.flameSpeed * CGFloat(dt)) {
+        case .reachedTheTip:
+            hideFlame()
+            return .fail(.burnedOut)
+        case .burning:
+            lineNode.update(points: drawingEngine.points)
+            flameNode?.position = drawingEngine.burnFront ?? .zero
+            return .ok
+        case .notBurning:
+            return .ok
+        }
+    }
+
+    private func showFlame() {
+        guard flameNode == nil else { return }
+        let fire = SKEmitterNode()
+        fire.particleTexture = LineNode.softDot
+        fire.particleBirthRate = 220
+        fire.particleLifetime = 0.5
+        fire.particleLifetimeRange = 0.3
+        fire.particleSize = CGSize(width: 14, height: 14)
+        fire.particleScaleSpeed = -1.4
+        fire.particleAlphaSpeed = -1.8
+        fire.particleSpeed = 40
+        fire.particleSpeedRange = 40
+        fire.emissionAngleRange = .pi * 2
+        fire.particleColor = theme.obstacleColors[ObstacleType.fuse.themeIndex]
+        fire.particleColorBlendFactor = 1
+        fire.particleBlendMode = .add
+        fire.zPosition = 12
+        fire.targetNode = self
+        fire.position = drawingEngine.burnFront ?? .zero
+        addChild(fire)
+        flameNode = fire
+    }
+
+    private func hideFlame() {
+        flameNode?.particleBirthRate = 0
+        flameNode?.run(.sequence([.wait(forDuration: 0.5), .removeFromParent()]))
+        flameNode = nil
+    }
+
     private func obstacleDescriptors() -> [ObstacleDescriptor] {
         obstacleNodes.map { $0.descriptor() }
     }
@@ -550,7 +679,11 @@ final class GameScene: SKScene {
     /// they cross and leave within a couple of seconds, whereas a blocker sits there for
     /// most of the round.
     private var lethalObstacleCount: Int {
-        obstacleNodes.filter { !$0.obstacleType.severs }.count
+        obstacleNodes.filter { $0.obstacleType.isLethal }.count
+    }
+
+    private var fuseCount: Int {
+        obstacleNodes.filter { $0.obstacleType.ignites }.count
     }
 
     private var cutterCount: Int {
@@ -565,6 +698,12 @@ final class GameScene: SKScene {
             // full of slow blockers starved cutters out entirely — they never appeared.
             guard cutterCount < Self.maxConcurrentCutters else { return }
             return spawnCutter()
+        }
+
+        if type == .fuse {
+            // One burn at a time: it is already a full-attention event, and it must not
+            // ignite while the line is still burning from the last one.
+            guard fuseCount < Self.maxConcurrentFuses, !drawingEngine.isBurning else { return }
         }
 
         guard lethalObstacleCount < levelConfig.maxObstacles else { return }

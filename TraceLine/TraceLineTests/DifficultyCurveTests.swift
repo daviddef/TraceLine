@@ -91,18 +91,28 @@ final class DifficultyCurveTests: XCTestCase {
         XCTAssertTrue(stalls.isEmpty, "difficulty stalls or resets:\n  " + stalls.joined(separator: "\n  "))
     }
 
-    /// The board must genuinely fill up more as the game goes on, not just get rushed.
+    /// The board must genuinely fill up more as the game goes on — not just get rushed.
+    ///
+    /// This is the board-fill companion to `testDemandNeverStallsOrGoesBackwards`, which is
+    /// the strict monotonic guard on required *speed*. Board-fill is not strictly monotonic
+    /// and should not be: a world that introduces a new mechanic legitimately spotlights it
+    /// by lowering the coverage target while raising the pace (World 3's fuse levels do
+    /// exactly this). So the claim here is the trend — each world's finale asks more than
+    /// the last world's, and the game's finale dwarfs level 1 — not that every single level
+    /// out-fills the one before.
     func testTheBoardFillsMoreAsTheGameGoesOn() {
         let first = demand(for: LevelConfig.all.first!).rows
         let last = demand(for: LevelConfig.all.last!).rows
         XCTAssertGreaterThanOrEqual(last, first * 3,
                                     "the finale should ask for several times the drawing of level 1")
-        var previous = 0
-        for level in LevelConfig.all {
-            let rows = demand(for: level).rows
-            XCTAssertGreaterThanOrEqual(rows, previous,
-                                        "level \(level.id) asks for less drawing than the one before")
-            previous = rows
+
+        var previousFinale = 0
+        for world in WorldConfig.all {
+            guard let finale = world.levels.last else { continue }
+            let rows = demand(for: finale).rows
+            XCTAssertGreaterThan(rows, previousFinale,
+                                 "world \(world.id)'s finale fills less than the previous world's")
+            previousFinale = rows
         }
     }
 

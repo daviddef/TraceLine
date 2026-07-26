@@ -22,6 +22,7 @@ final class ObstacleNode: SKNode {
     var hitRadius: CGFloat {
         switch obstacleType {
         case .blocker, .shrinker: return Self.circleRadius
+        case .fuse:               return Self.fuseRadius
         case .magnetic:           return Self.magneticRadius
         case .mover:              return Self.moverSize.width / 2
         case .cutter:             return Self.cutterSize.width / 2
@@ -39,6 +40,7 @@ final class ObstacleNode: SKNode {
     /// The field ring is drawn at exactly this radius — a pull that reached beyond what
     /// the player can see would be the game cheating.
     static let magneticFieldRadius: CGFloat = 78
+    private static let fuseRadius: CGFloat = 13
     /// Max deflection at the core, falling to zero at the field's edge. Tuned by looking
     /// at it: at 3.2 the bend was under 2pt — thinner than the line itself, so the field
     /// looked like decoration. At 18 the line visibly leans, and anything inside roughly
@@ -117,6 +119,49 @@ final class ObstacleNode: SKNode {
             shape.strokeColor = .clear
             addChild(shape)
             if theme.obstacleGlow { addGlow(like: shape, color: color) }
+
+        case .fuse:
+            // A teardrop flame: round base, tapered tip, flickering. Reads as fire without
+            // an image asset.
+            // A rounded flame: bulbous base, S-curved shoulders, a soft leaning tip.
+            func flamePath(scale: CGFloat) -> CGPath {
+                let r = Self.fuseRadius * scale
+                let f = CGMutablePath()
+                f.move(to: CGPoint(x: 0, y: r * 1.6))                       // tip
+                f.addCurve(to: CGPoint(x: -r, y: 0),                        // left shoulder
+                           control1: CGPoint(x: -r * 0.7, y: r * 1.1),
+                           control2: CGPoint(x: -r, y: r * 0.6))
+                f.addCurve(to: CGPoint(x: 0, y: -r),                        // bulbous base, left half
+                           control1: CGPoint(x: -r, y: -r * 0.6),
+                           control2: CGPoint(x: -r * 0.6, y: -r))
+                f.addCurve(to: CGPoint(x: r, y: 0),                         // bulbous base, right half
+                           control1: CGPoint(x: r * 0.6, y: -r),
+                           control2: CGPoint(x: r, y: -r * 0.6))
+                f.addCurve(to: CGPoint(x: 0, y: r * 1.6),                   // right shoulder
+                           control1: CGPoint(x: r, y: r * 0.6),
+                           control2: CGPoint(x: r * 0.7, y: r * 1.1))
+                f.closeSubpath()
+                return f
+            }
+
+            let shape = SKShapeNode(path: flamePath(scale: 1.0))
+            shape.fillColor = color
+            shape.strokeColor = .clear
+            addChild(shape)
+
+            // A brighter inner flame, concentric, and a flicker on both.
+            let inner = SKShapeNode(path: flamePath(scale: 0.55))
+            inner.fillColor = SKColor(hex: "#fff3d6").withAlphaComponent(0.85)
+            inner.strokeColor = .clear
+            inner.position = CGPoint(x: 0, y: Self.fuseRadius * 0.1)
+            addChild(inner)
+            if theme.obstacleGlow { addGlow(like: shape, color: color) }
+            let flicker = SKAction.repeatForever(.sequence([
+                .group([.scaleX(to: 1.12, duration: 0.18), .scaleY(to: 0.94, duration: 0.18)]),
+                .group([.scaleX(to: 0.92, duration: 0.16), .scaleY(to: 1.08, duration: 0.16)]),
+                .group([.scaleX(to: 1.0, duration: 0.14), .scaleY(to: 1.0, duration: 0.14)]),
+            ]))
+            shape.run(flicker)
 
         case .shrinker:
             let path = CGMutablePath()
@@ -254,6 +299,9 @@ final class ObstacleNode: SKNode {
         switch obstacleType {
         case .blocker, .shrinker:
             return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.circleRadius))
+        case .fuse:
+            return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.fuseRadius),
+                                      ignites: true)
         case .magnetic:
             return ObstacleDescriptor(id: hash, shape: .circle(center: pos, radius: Self.magneticRadius),
                                       pull: Self.magneticPull, pullRadius: Self.magneticFieldRadius)

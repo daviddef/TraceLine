@@ -19,6 +19,10 @@ final class DrawingEngine {
     var pointCount: Int { points.count }
     var currentTip: CGPoint? { points.last }
 
+    /// A constant drift added to every recorded point — World 3's wind. The whole board
+    /// pulls one way, so a straight stroke bows. Zero except on windy levels.
+    var wind: CGVector = .zero
+
     /// Obstacle ids currently inside the near-miss radius, so one slow pass
     /// counts as a single near-miss rather than one per recorded point.
     private var obstaclesInNearMissZone: Set<Int> = []
@@ -30,6 +34,7 @@ final class DrawingEngine {
         nearMissCount = 0
         isBurning = false
         obstaclesInNearMissZone.removeAll()
+        // wind is a level property, not per-round state, so begin() leaves it alone
     }
 
     // MARK: - Extend line
@@ -49,7 +54,7 @@ final class DrawingEngine {
 
         // 2. Obstacle collision — test the whole proposed segment, not just its
         //    endpoint, so a fast flick can't tunnel straight through an obstacle.
-        for obs in obstacles where !obs.severs && obs.intersectsSegment(from: last, to: newPoint) {
+        for obs in obstacles where obs.isLethal && obs.intersectsSegment(from: last, to: newPoint) {
             return .fail(.obstacleHit)
         }
 
@@ -66,7 +71,7 @@ final class DrawingEngine {
     /// check every frame and not only when the player moves.
     func checkTipCollision(obstacles: [ObstacleDescriptor]) -> DrawResult {
         guard let tip = points.last else { return .ok }
-        for obs in obstacles where !obs.severs && obs.contains(tip) { return .fail(.obstacleHit) }
+        for obs in obstacles where obs.isLethal && obs.contains(tip) { return .fail(.obstacleHit) }
         updateNearMisses(at: tip, obstacles: obstacles)
         return .ok
     }
@@ -79,7 +84,7 @@ final class DrawingEngine {
     /// or — far worse — into the path you have already drawn, which is a crossing and ends
     /// the round. Your own line remains the real hazard.
     func pulled(_ point: CGPoint, obstacles: [ObstacleDescriptor]) -> CGPoint {
-        var p = point
+        var p = CGPoint(x: point.x + wind.dx, y: point.y + wind.dy)
         for obs in obstacles where obs.pull > 0 && obs.pullRadius > 0 {
             guard case .circle(let centre, _) = obs.shape else { continue }
             let d = GeometryHelpers.distance(p, centre)
@@ -273,6 +278,11 @@ struct ObstacleDescriptor {
     let shape: Shape
     /// True for cutters: they sever the line rather than ending the round.
     var severs: Bool = false
+    /// True for fuses: they ignite the line rather than ending the round.
+    var ignites: Bool = false
+
+    /// Neither severing nor igniting hazards end the round on contact.
+    var isLethal: Bool { !severs && !ignites }
 
     /// Magnets only: how hard the line is bent per recorded point, and how far the field
     /// reaches. Zero for everything else.

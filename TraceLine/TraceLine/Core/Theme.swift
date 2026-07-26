@@ -46,6 +46,7 @@ struct Theme {
             SKColor(hex: "#a78bfa"),  // Magnetic
             SKColor(hex: "#f97316"),  // Shrinker
             SKColor(hex: "#22d3ee"),  // Cutter
+            SKColor(hex: "#fb923c"),  // Fuse
         ],
         hudTextColor: .white,
         hudAccentColor: SKColor(hex: "#6366f1"),
@@ -72,6 +73,7 @@ struct Theme {
             SKColor(hex: "#a78bfa"),
             SKColor(hex: "#ec4899"),
             SKColor(hex: "#ef4444"),  // Cutter
+            SKColor(hex: "#ea580c"),  // Fuse
         ],
         hudTextColor: SKColor(hex: "#1c1917"),
         hudAccentColor: SKColor(hex: "#f97316"),
@@ -98,6 +100,7 @@ struct Theme {
             SKColor(hex: "#60a5fa"),
             SKColor(hex: "#ec4899"),
             SKColor(hex: "#38bdf8"),  // Cutter
+            SKColor(hex: "#f97316"),  // Fuse
         ],
         hudTextColor: SKColor(hex: "#22c55e"),
         hudAccentColor: SKColor(hex: "#22c55e"),
@@ -124,6 +127,7 @@ struct Theme {
             SKColor(hex: "#ec4899"),
             SKColor(hex: "#84cc16"),
             SKColor(hex: "#f43f5e"),  // Cutter
+            SKColor(hex: "#fb7185"),  // Fuse
         ],
         hudTextColor: SKColor(hex: "#0c4a6e"),
         hudAccentColor: SKColor(hex: "#06b6d4"),

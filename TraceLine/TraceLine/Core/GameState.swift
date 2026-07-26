@@ -15,6 +15,7 @@ enum FailReason {
     case lineCrossed
     case obstacleHit
     case timeExpired
+    case burnedOut
 
     var displayText: String {
         switch self {
@@ -22,6 +23,7 @@ enum FailReason {
         case .lineCrossed:  return "🚫 Line crossed itself"
         case .obstacleHit:  return "⛔ Hit an obstacle"
         case .timeExpired:  return "⏱ Time's up"
+        case .burnedOut:    return "🔥 The line burned out"
         }
     }
 }

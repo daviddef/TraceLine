@@ -34,6 +34,7 @@ enum Endless {
         if wave >= 6  { types.append(.cutter) }
         if wave >= 9  { types.append(.magnetic) }
         if wave >= 12 { types.append(.shrinker) }
+        if wave >= 15 { types.append(.fuse) }
         return types
     }
 
@@ -63,6 +64,7 @@ enum Endless {
     /// Shelters, placed from the wave number so the board is the same for everyone.
     private static func shelters(forWave wave: Int) -> [SafeZoneConfig] {
         guard wave >= 5 else { return [] }
+        // A fuse can appear from wave 15, and a burn needs somewhere to run.
         let count = wave >= 11 ? 2 : 1
         return (0..<count).map { i in
             // A stable hash of the wave, so placement looks scattered but never moves.

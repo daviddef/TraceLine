@@ -484,5 +484,292 @@
         "radius": 0.1
       }
     ]
+  },
+  {
+    "id": 21,
+    "name": "Tinder",
+    "world": 3,
+    "timeLimit": 20,
+    "targetCoverage": 0.6,
+    "obstacleTypes": [
+      "fuse",
+      "blocker"
+    ],
+    "spawnInterval": 3.4,
+    "maxObstacles": 4,
+    "gridSize": 32,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.5,
+        "radius": 0.15
+      }
+    ],
+    "lineEffect": "ember"
+  },
+  {
+    "id": 22,
+    "name": "Smoulder",
+    "world": 3,
+    "timeLimit": 20,
+    "targetCoverage": 0.63,
+    "obstacleTypes": [
+      "fuse",
+      "blocker",
+      "mover"
+    ],
+    "spawnInterval": 3.2,
+    "maxObstacles": 4,
+    "gridSize": 32,
+    "safeZones": [
+      {
+        "x": 0.3,
+        "y": 0.6,
+        "radius": 0.13
+      },
+      {
+        "x": 0.72,
+        "y": 0.35,
+        "radius": 0.12
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "name": "Firebreak",
+    "world": 3,
+    "timeLimit": 20,
+    "targetCoverage": 0.66,
+    "obstacleTypes": [
+      "fuse",
+      "mover",
+      "shrinker"
+    ],
+    "spawnInterval": 3.1,
+    "maxObstacles": 4,
+    "gridSize": 32,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.72,
+        "radius": 0.13
+      },
+      {
+        "x": 0.5,
+        "y": 0.28,
+        "radius": 0.12
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "name": "Updraft",
+    "world": 3,
+    "timeLimit": 19,
+    "targetCoverage": 0.62,
+    "obstacleTypes": [
+      "fuse",
+      "blocker",
+      "mover"
+    ],
+    "spawnInterval": 2.9,
+    "maxObstacles": 5,
+    "gridSize": 34,
+    "safeZones": [
+      {
+        "x": 0.28,
+        "y": 0.5,
+        "radius": 0.12
+      },
+      {
+        "x": 0.74,
+        "y": 0.5,
+        "radius": 0.12
+      }
+    ],
+    "windX": 0,
+    "windY": 1.6,
+    "lineEffect": "flicker"
+  },
+  {
+    "id": 25,
+    "name": "Backdraft",
+    "world": 3,
+    "timeLimit": 19,
+    "targetCoverage": 0.65,
+    "obstacleTypes": [
+      "fuse",
+      "blocker",
+      "cutter"
+    ],
+    "spawnInterval": 2.8,
+    "maxObstacles": 5,
+    "gridSize": 34,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.5,
+        "radius": 0.13
+      }
+    ],
+    "windX": -1.8,
+    "windY": 0
+  },
+  {
+    "id": 26,
+    "name": "Ash",
+    "world": 3,
+    "timeLimit": 19,
+    "targetCoverage": 0.68,
+    "obstacleTypes": [
+      "fuse",
+      "mover",
+      "shrinker"
+    ],
+    "spawnInterval": 2.6,
+    "maxObstacles": 5,
+    "gridSize": 34,
+    "safeZones": [
+      {
+        "x": 0.24,
+        "y": 0.28,
+        "radius": 0.11
+      },
+      {
+        "x": 0.76,
+        "y": 0.72,
+        "radius": 0.11
+      }
+    ],
+    "windX": 1.6,
+    "windY": 0
+  },
+  {
+    "id": 27,
+    "name": "Wildfire",
+    "world": 3,
+    "timeLimit": 18,
+    "targetCoverage": 0.64,
+    "obstacleTypes": [
+      "fuse",
+      "blocker",
+      "mover",
+      "cutter"
+    ],
+    "spawnInterval": 2.4,
+    "maxObstacles": 6,
+    "gridSize": 36,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.74,
+        "radius": 0.12
+      },
+      {
+        "x": 0.5,
+        "y": 0.26,
+        "radius": 0.11
+      }
+    ],
+    "windX": 0,
+    "windY": -1.6
+  },
+  {
+    "id": 28,
+    "name": "Scorched",
+    "world": 3,
+    "timeLimit": 18,
+    "targetCoverage": 0.67,
+    "obstacleTypes": [
+      "fuse",
+      "mover",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 2.3,
+    "maxObstacles": 6,
+    "gridSize": 36,
+    "safeZones": [
+      {
+        "x": 0.28,
+        "y": 0.5,
+        "radius": 0.11
+      },
+      {
+        "x": 0.74,
+        "y": 0.5,
+        "radius": 0.11
+      }
+    ],
+    "windX": 1.4,
+    "windY": 1.0
+  },
+  {
+    "id": 29,
+    "name": "Inferno",
+    "world": 3,
+    "timeLimit": 17,
+    "targetCoverage": 0.63,
+    "obstacleTypes": [
+      "fuse",
+      "blocker",
+      "mover",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 2.1,
+    "maxObstacles": 6,
+    "gridSize": 38,
+    "safeZones": [
+      {
+        "x": 0.24,
+        "y": 0.72,
+        "radius": 0.11
+      },
+      {
+        "x": 0.76,
+        "y": 0.28,
+        "radius": 0.11
+      }
+    ],
+    "windX": -1.6,
+    "windY": -1.0
+  },
+  {
+    "id": 30,
+    "name": "Cinder",
+    "world": 3,
+    "timeLimit": 17,
+    "targetCoverage": 0.66,
+    "obstacleTypes": [
+      "fuse",
+      "blocker",
+      "mover",
+      "magnetic",
+      "cutter",
+      "shrinker"
+    ],
+    "spawnInterval": 2.0,
+    "maxObstacles": 7,
+    "gridSize": 38,
+    "safeZones": [
+      {
+        "x": 0.5,
+        "y": 0.78,
+        "radius": 0.1
+      },
+      {
+        "x": 0.5,
+        "y": 0.22,
+        "radius": 0.1
+      },
+      {
+        "x": 0.5,
+        "y": 0.5,
+        "radius": 0.1
+      }
+    ],
+    "windX": 1.8,
+    "windY": 0
   }
 ]

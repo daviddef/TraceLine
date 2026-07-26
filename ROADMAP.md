@@ -75,9 +75,21 @@ principles and used by nothing. World 3 is where it becomes the whole point.
 
 ---
 
-## World 3 — The Burn
+## World 3 — The Burn — **SHIPPED**
 
 > *The board stops trying to end you and starts trying to outlast you.*
+
+Built: the **Fuse** is a real hazard type with a three-layer flame icon; on contact it
+ignites the line and a particle flame eats toward the fingertip, coverage retracting live,
+until you reach a shelter. **Wind** is the second mechanic — a constant drift on every
+drawn point, shown as directional streaks in the world's own colour. Ten levels (Tinder →
+Cinder), climbing 348 → 526 pt/s, fuse spotlit at 21 and wind arriving at 24. Tests guard
+that every fuse level has a shelter to escape to and that wind stays inside World 3. The
+Fuse also joins endless at wave 15. Flame speed (190 pt/s) is a first guess and wants
+real-device tuning — below the design notes for why.
+
+The design that follows is the record of how it was reasoned, kept because the *why* is
+worth more than the diff.
 
 ### The Fuse
 

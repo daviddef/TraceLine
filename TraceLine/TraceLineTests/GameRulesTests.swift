@@ -159,6 +159,24 @@ final class LevelConfigTests: XCTestCase {
         }
     }
 
+    /// A fuse ignites the line and you escape by reaching a shelter. A fuse level with no
+    /// shelter is an unwinnable trap — the flame always reaches the tip.
+    func testEveryFuseLevelHasAShelter() {
+        for level in LevelConfig.all where level.obstacleTypes.contains(.fuse) {
+            XCTAssertFalse(level.zones.isEmpty,
+                           "level \(level.id) (\(level.displayName)) has a fuse but nowhere to run")
+        }
+    }
+
+    /// Wind is World 3's second idea; it should actually be used, and only there.
+    func testWindIsUsedAndStaysInWorldThree() {
+        let windy = LevelConfig.all.filter(\.hasWind)
+        XCTAssertFalse(windy.isEmpty, "wind is implemented but no level uses it")
+        for level in windy {
+            XCTAssertEqual(level.world, 3, "wind escaped World 3 at level \(level.id)")
+        }
+    }
+
     func testEveryObstacleTypeHasAColourInEveryTheme() {
         for key in ThemeKey.allCases {
             let theme = Theme.theme(for: key)

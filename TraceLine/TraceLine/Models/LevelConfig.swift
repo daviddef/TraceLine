@@ -1,7 +1,7 @@
 import Foundation
 
 enum ObstacleType: String, Codable, CaseIterable {
-    case blocker, mover, magnetic, shrinker, cutter
+    case blocker, mover, magnetic, shrinker, cutter, fuse
 
     var themeIndex: Int {
         switch self {
@@ -10,11 +10,19 @@ enum ObstacleType: String, Codable, CaseIterable {
         case .magnetic: return 2
         case .shrinker: return 3
         case .cutter:   return 4
+        case .fuse:     return 5
         }
     }
 
     /// Cutters sever the line instead of ending the round. Every other type is a wall.
     var severs: Bool { self == .cutter }
+
+    /// Fuses ignite the line rather than ending the round on contact. World 3's hazard —
+    /// the first one you can beat rather than only dodge.
+    var ignites: Bool { self == .fuse }
+
+    /// Neither severing nor igniting hazards end the round on contact.
+    var isLethal: Bool { !severs && !ignites }
 }
 
 struct LevelConfig: Codable, Identifiable {
@@ -42,10 +50,19 @@ struct LevelConfig: Codable, Identifiable {
 
     var effect: LineEffect { lineEffect ?? .plain }
 
+    /// World 3's wind: a constant drift on the line, in points per recorded point.
+    /// Optional; absent means still air.
+    let windX: Float?
+    let windY: Float?
+
+    var wind: CGVector { CGVector(dx: CGFloat(windX ?? 0), dy: CGFloat(windY ?? 0)) }
+    var hasWind: Bool { (windX ?? 0) != 0 || (windY ?? 0) != 0 }
+
     /// Built in code rather than decoded — endless generates its boards per wave.
     init(id: Int, name: String?, world: Int, timeLimit: TimeInterval, targetCoverage: Float,
          obstacleTypes: [ObstacleType], spawnInterval: TimeInterval, maxObstacles: Int,
-         gridSize: Int, safeZones: [SafeZoneConfig]? = nil, lineEffect: LineEffect? = nil) {
+         gridSize: Int, safeZones: [SafeZoneConfig]? = nil, lineEffect: LineEffect? = nil,
+         windX: Float? = nil, windY: Float? = nil) {
         self.id = id
         self.name = name
         self.world = world
@@ -57,6 +74,8 @@ struct LevelConfig: Codable, Identifiable {
         self.gridSize = gridSize
         self.safeZones = safeZones
         self.lineEffect = lineEffect
+        self.windX = windX
+        self.windY = windY
     }
 
     var zones: [SafeZoneConfig] { safeZones ?? [] }
