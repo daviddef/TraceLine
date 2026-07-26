@@ -1,42 +1,50 @@
 # TraceLine — Roadmap
 
-Status: 20 July 2026. Twenty levels across two worlds, on TestFlight as build
-`202607201131`. 103 unit tests, 5 UI tests, ~3,700 lines of Swift. Version 1.0 was
-rejected once under Guideline 2.1 for missing review information; that has been answered
-and is waiting on a screen recording and resubmission.
+Status: 20 July 2026. **Version 1.0 is live on the App Store** (`READY_FOR_SALE`). Twenty
+levels across two worlds, endless mode, ~4,000 lines of Swift, 128 unit tests + 5 UI.
+
+This is the **post-launch enrichment phase**. The brief from here: *richer, more fun,
+better graphics, more worlds*. The plan below is organised around those four, in the order
+that compounds — a new world is worth more once the rendering it ships on is better, and
+better rendering is worth more once there is a settings screen to let a weaker device turn
+it down.
 
 ---
 
-## The three questions that decide this
+## The bet, restated for a shipped game
 
-Everything below is downstream of these. They are in the order they matter.
+v1 answered the three founding questions well enough to ship. The open ones now are
+different, and they are about depth rather than existence.
 
-### 1. Is it fun? — unknown
+### More worlds — the headline ask
 
-Nobody has played twenty levels. The difficulty curve was rebuilt to be measurably
-monotonic, but the headroom figures assume a sustained drawing speed of about 400 pt/s,
-and **that number is a model, not a measurement**. Levels 18–20 ask for 20–21 passes of
-the board in 23–25 seconds. If that is physically unclearable the curve's shape survives
-and the time limits scale — but somebody has to find out.
+Two worlds teach two ideas (dodge, then lose control). A third is designed, and its
+mechanic's engine core is already built and tested — this is the cheapest large win on the
+board. **Worlds are the spine of "richer": each one is a new verb, not a new coat of
+paint.** The discipline that got us here holds — a world must introduce a genuinely new
+hazard or a test fails.
 
-Cheapest unknown to close, most expensive to leave open. Everything else here assumes the
-core loop is good.
+### Better graphics — the most-visible ask
 
-### 2. Is there enough of it? — no, structurally
+The rendering is honest but flat: a stand-in glow made of a scaled translucent copy (the
+code itself says "in production, use SKEffectNode with CIFilter for proper glow"), no depth
+behind the play area, hazards that are solid shapes. Real bloom, an ambient background, and
+richer hazard art are the highest visible-polish-per-hour available, and they lift every
+screen at once rather than one feature.
 
-GameAnalytics' 2026 cross-title telemetry puts median mobile D7 at ~4%, with arcade titles
-leading on D1 and decaying hardest. TraceLine is arcade-shaped and finite. Twenty levels
-beats ten, but it is still a wall: once they are cleared there is nothing to come back to.
+### More fun — the felt ask
 
-**Endless mode is the structural answer**, and it is cheap — the engine already spawns,
-escalates and scores. What it lacks is a level config that never ends.
+Fun is the hardest to schedule because it is the hardest to measure, but two things move it
+cheaply and are already scaffolded: **audio** (every cue is marked, no asset has ever
+existed — a line that hums and cracks is most of a game's feel) and **juice** (screen
+shake on a cut, particles on a clear, a satisfying wave transition).
 
-### 3. Can people play it? — many can't
+### Still true, still unmeasured
 
-*Never lift* plus *never cross* punishes hand tremor and low dexterity brutally. That is
-both an exclusion and, per the research, the single biggest untapped App Store featuring
-angle. A forgiveness radius and a practice mode would open the game to players who
-currently cannot play it at all.
+The difficulty curve is a model, not a measurement — headroom assumes ~400 pt/s sustained
+drawing and nobody has been timed. And *never lift + never cross* still excludes players
+with tremor or low dexterity, which is both the right thing to fix and the biggest untapped
+featuring angle. Neither blocks the enrichment work, but both stay on the board.
 
 ---
 
@@ -141,19 +149,28 @@ working as intended: World 3 cannot be "World 2 with bigger numbers" without a r
 
 ---
 
-## Now
+## Now — the enrichment sequence
 
-Ordered by unknown-closed per hour spent.
+Ordered so each step compounds the next.
 
-1. **Play twenty levels on a device and record where it breaks.** Closes question 1. The
-   App Store screen recording forces most of this anyway.
-2. ~~**Endless mode.**~~ **Shipped.** See below.
-3. **Audio.** `SoundHook` already marks every cue (`tap`, `fail`, `win`, `nearMiss`, `cut`)
-   and no asset has ever existed. Best polish-per-hour on the list: a line that hums as it
-   draws and cracks when it is cut is most of the game's felt quality.
-4. **Accessibility pass.** Closes question 3. Forgiveness radius on self-crossing, practice
-   mode with no timer and no hazards, Reduce Motion honoured (line effects, scanlines), and
-   a high-contrast option.
+1. **World 3 — The Burn.** The headline "more worlds" ask, and the Fuse's engine core is
+   already built. Make the Fuse a real hazard type, give it a flame visual, add wind, author
+   ten levels. Designed in full below.
+2. **Better graphics: real bloom.** Replace the fake glow with an `SKEffectNode` +
+   `CIGaussianBlur` bloom pass. One change, lifts every neon element on every screen. Gate
+   it behind a quality setting so weaker devices can drop it.
+3. **Ambient background + hazard art.** Depth behind the play area (a slow parallax field),
+   and hazards that read as objects rather than flat shapes.
+4. **Audio.** Every cue (`tap`, `fail`, `win`, `nearMiss`, `cut`) is already marked and no
+   asset has ever existed. A line that hums as it draws and cracks when it is cut is most of
+   the game's felt quality.
+5. **Juice.** Screen shake on a cut, a burst on a clear, a weightier wave transition. Cheap,
+   and it is most of what "more fun" means in the hand.
+6. **Settings + accessibility.** Somewhere to turn graphics down, plus the forgiveness
+   radius and practice mode that open the game to players who currently cannot play it.
+
+Shipped since this list was last written: **endless mode** (below), and a difficulty curve
+rebuilt to be measurably monotonic.
 
 ### Endless, as built
 
