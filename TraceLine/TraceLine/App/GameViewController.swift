@@ -66,6 +66,12 @@ final class GameViewController: UIViewController {
             return
         }
 
+        // Straight to the settings screen, for checking its layout and toggles.
+        if CommandLine.arguments.contains("--debug-settings") {
+            skView.presentScene(SettingsScene(theme: Theme.active, size: view.bounds.size))
+            return
+        }
+
         // Reaching the win screen legitimately needs a full round, so allow jumping
         // straight to it while iterating on its layout.
         if CommandLine.arguments.contains("--debug-win"),

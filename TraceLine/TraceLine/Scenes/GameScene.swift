@@ -554,8 +554,10 @@ final class GameScene: SKScene {
         flameNode = fire
     }
 
-    /// A brief camera shake. `power` is the peak offset in points.
+    /// A brief camera shake. `power` is the peak offset in points. Suppressed entirely
+    /// when the player (or the system) has asked to reduce motion.
     private func shake(power: CGFloat) {
+        guard !Motion.isReduced else { return }
         cameraNode.removeAction(forKey: "shake")
         var steps: [SKAction] = []
         var p = power

@@ -83,6 +83,15 @@ final class PlayerProgress {
         set { defaults.set(newValue, forKey: "sound_enabled") }
     }
 
+    /// When on, the game holds still — no camera shake or kick. This is the *in-app*
+    /// override; the effective setting also honours the system Reduce Motion switch
+    /// (see `Motion.isReduced`), so a player who has it on system-wide never has to
+    /// find this toggle. Defaults off.
+    var reduceMotion: Bool {
+        get { defaults.object(forKey: "reduce_motion") as? Bool ?? false }
+        set { defaults.set(newValue, forKey: "reduce_motion") }
+    }
+
     /// Total stars earned across the whole game.
     var totalStars: Int { LevelConfig.all.reduce(0) { $0 + stars(for: $1.id) } }
 

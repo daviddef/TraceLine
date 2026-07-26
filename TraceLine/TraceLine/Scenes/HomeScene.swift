@@ -32,6 +32,17 @@ final class HomeScene: SKScene {
         title.position = CGPoint(x: 0, y: 190)
         addChild(title)
 
+        // A gear in the top-right corner, kept out of the main menu column.
+        let gear = SKLabelNode(fontNamed: Fonts.body(for: theme))
+        gear.text = "⚙︎"
+        gear.fontSize = 26
+        gear.fontColor = theme.hudTextColor.withAlphaComponent(0.55)
+        gear.verticalAlignmentMode = .center
+        gear.horizontalAlignmentMode = .center
+        gear.position = CGPoint(x: size.width / 2 - 34, y: size.height / 2 - 54)
+        gear.name = "settings_button"
+        addChild(gear)
+
         let tagline = SKLabelNode(fontNamed: Fonts.body(for: theme))
         tagline.text = "DRAW. SURVIVE. DON'T LIFT."
         tagline.fontSize = 13
@@ -108,6 +119,9 @@ final class HomeScene: SKScene {
                                transition: .fade(withDuration: 0.3))
         case "themes_button":
             view?.presentScene(ThemeSelectScene(theme: theme, size: size),
+                               transition: .fade(withDuration: 0.3))
+        case "settings_button":
+            view?.presentScene(SettingsScene(theme: theme, size: size),
                                transition: .fade(withDuration: 0.3))
         case "leaderboard_button":
             Analytics.log(.leaderboardOpened)
