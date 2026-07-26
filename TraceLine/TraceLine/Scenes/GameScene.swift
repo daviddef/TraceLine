@@ -95,6 +95,13 @@ final class GameScene: SKScene {
 
         #if DEBUG
         if CommandLine.arguments.contains("--demo-path") { seedDemoPath() }
+        // Trip a fail on its own, to see the game-over overlay and auto-restart without
+        // having to lose a round by hand.
+        if CommandLine.arguments.contains("--debug-fail") {
+            stateMachine.transition(to: .idle)
+            run(.sequence([.wait(forDuration: 1.0),
+                           .run { [weak self] in self?.triggerFail(reason: .obstacleHit) }]))
+        }
         #endif
     }
 
@@ -652,20 +659,57 @@ final class GameScene: SKScene {
         if mode == .endless {
             GameCenter.submitEndless(score: score, wave: wave)
         }
-        let roundScore = makeRoundScore(stars: 0)
         Analytics.log(.levelFailed(id: levelConfig.id, reason: reason,
                                    coveragePercent: Int(coverage * 100)))
         lineNode.triggerFail { [weak self] in
-            guard let self, let view = self.view else { return }
-            let scene = GameOverScene(reason: reason,
-                                      roundScore: roundScore,
-                                      levelConfig: self.levelConfig,
-                                      theme: self.theme,
-                                      size: self.size,
-                                      mode: self.mode,
-                                      wave: self.wave)
-            view.presentScene(scene, transition: .fade(withDuration: 0.3))
+            guard let self else { return }
+            self.showFailOverlayAndRestart(reason: reason)
         }
+    }
+
+    /// A game-over that does not stop the game. Instead of a full screen with a "Try Again"
+    /// button — which the round's own tempo makes tedious — a light overlay shows what went
+    /// wrong over the frozen board, then the level restarts on its own. The way *out* is the
+    /// pause button, which is always there before a stroke begins.
+    private func showFailOverlayAndRestart(reason: FailReason) {
+        let overlay = SKNode()
+        overlay.zPosition = 250
+
+        // Deliberately translucent — the board stays visible behind it.
+        let dim = SKShapeNode(rectOf: size)
+        dim.fillColor = theme.background.withAlphaComponent(0.6)
+        dim.strokeColor = .clear
+        overlay.addChild(dim)
+
+        let title = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        title.text = "Game Over"
+        title.fontSize = 34
+        title.fontColor = theme.hudTextColor
+        title.position = CGPoint(x: 0, y: 40)
+        overlay.addChild(title)
+
+        let reasonLabel = SKLabelNode(fontNamed: Fonts.body(for: theme))
+        reasonLabel.text = reason.displayText
+        reasonLabel.fontSize = 16
+        reasonLabel.fontColor = theme.hudTextColor.withAlphaComponent(0.8)
+        reasonLabel.position = CGPoint(x: 0, y: 2)
+        overlay.addChild(reasonLabel)
+
+        let hint = SKLabelNode(fontNamed: Fonts.body(for: theme))
+        hint.text = "Restarting…"
+        hint.fontSize = 13
+        hint.fontColor = theme.hudTextColor.withAlphaComponent(0.45)
+        hint.position = CGPoint(x: 0, y: -34)
+        overlay.addChild(hint)
+
+        overlay.alpha = 0
+        overlay.run(.fadeIn(withDuration: 0.2))
+        addChild(overlay)
+
+        // Restart the level on its own after a beat, no tap required.
+        run(.sequence([.wait(forDuration: 1.3), .run { [weak self] in
+            self?.restartCurrentLevel()
+        }]))
     }
 
     // MARK: - Endless waves
@@ -891,13 +935,22 @@ extension GameScene: GameStateMachineDelegate {
         title.text = "Paused"
         title.fontSize = 32
         title.fontColor = theme.hudTextColor
-        title.position = CGPoint(x: 0, y: 60)
+        title.position = CGPoint(x: 0, y: 140)
         overlay.addChild(title)
 
         overlay.addChild(ButtonNode(title: "Resume", theme: theme, name: "resume_button",
-                                    position: CGPoint(x: 0, y: -10)))
-        overlay.addChild(ButtonNode(title: "Level Select", theme: theme, name: "levels_button",
-                                    position: CGPoint(x: 0, y: -80), isPrimary: false))
+                                    position: CGPoint(x: 0, y: 60)))
+        // Endless has no single level to retry, so it offers a fresh run instead.
+        overlay.addChild(ButtonNode(title: mode == .endless ? "New Run" : "Restart Level",
+                                    theme: theme, name: "restart_button",
+                                    position: CGPoint(x: 0, y: -6), isPrimary: false))
+        if mode != .endless {
+            overlay.addChild(ButtonNode(title: "Level Select", theme: theme, name: "levels_button",
+                                        position: CGPoint(x: 0, y: -72), isPrimary: false))
+        }
+        overlay.addChild(ButtonNode(title: "Home", theme: theme, name: "home_button",
+                                    position: CGPoint(x: 0, y: mode == .endless ? -72 : -138),
+                                    isPrimary: false))
 
         addChild(overlay)
         pauseOverlay = overlay
@@ -912,11 +965,29 @@ extension GameScene: GameStateMachineDelegate {
         switch atPoint(pos).name {
         case "resume_button":
             stateMachine.transition(to: .idle)
+        case "restart_button":
+            restartCurrentLevel()
         case "levels_button":
             let scene = LevelSelectScene(theme: theme, size: size, worldID: levelConfig.world)
             view?.presentScene(scene, transition: .fade(withDuration: 0.3))
+        case "home_button":
+            view?.presentScene(HomeScene(theme: theme, size: size),
+                               transition: .fade(withDuration: 0.3))
         default:
             break
         }
+    }
+
+    /// Starts this level (or, in endless, a fresh run) over from the beginning.
+    private func restartCurrentLevel() {
+        let fresh: GameScene
+        if mode == .endless {
+            fresh = GameScene(levelConfig: Endless.config(forWave: 1), theme: theme,
+                              size: size, mode: .endless)
+        } else {
+            let base = LevelConfig.level(id: levelConfig.id) ?? levelConfig
+            fresh = GameScene(levelConfig: base, theme: theme, size: size, mode: mode)
+        }
+        view?.presentScene(fresh, transition: .fade(withDuration: 0.3))
     }
 }

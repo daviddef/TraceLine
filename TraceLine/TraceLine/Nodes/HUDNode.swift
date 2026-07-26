@@ -47,13 +47,14 @@ final class HUDNode: SKNode {
         scoreLabel.position = CGPoint(x: -sceneSize.width / 2 + 24, y: top)
         addChild(scoreLabel)
 
-        // Level
-        levelLabel.fontSize  = 14
-        levelLabel.fontColor = theme.hudTextColor.withAlphaComponent(0.6)
-        levelLabel.horizontalAlignmentMode = .right
+        // Level — tucked under the score, which frees the top-right corner for a pause
+        // button big enough to actually hit.
+        levelLabel.fontSize  = 13
+        levelLabel.fontColor = theme.hudTextColor.withAlphaComponent(0.55)
+        levelLabel.horizontalAlignmentMode = .left
         levelLabel.verticalAlignmentMode = .center
         levelLabel.text = "LVL \(levelConfig.id)"
-        levelLabel.position = CGPoint(x: sceneSize.width / 2 - 24, y: top)
+        levelLabel.position = CGPoint(x: -sceneSize.width / 2 + 24, y: top - 26)
         addChild(levelLabel)
 
         // Timer ring — a static track with an arc drawn over it.
@@ -103,17 +104,29 @@ final class HUDNode: SKNode {
                                         y: barY)
         addChild(targetMarker)
 
-        // Pause. Only actionable before drawing starts — once the line is live,
-        // reaching for a button means lifting a finger, which ends the round anyway.
-        let pause = SKLabelNode(fontNamed: Fonts.display(for: theme))
-        pause.text = "❚❚"
-        pause.fontSize = 14
-        pause.fontColor = theme.hudTextColor.withAlphaComponent(0.5)
-        pause.verticalAlignmentMode = .center
-        pause.horizontalAlignmentMode = .right
-        pause.position = CGPoint(x: sceneSize.width / 2 - 24, y: top - 28)
-        pause.name = "pause_button"
-        addChild(pause)
+        // Pause / menu — a real, obvious button in the top-right corner. It is the way out
+        // to Home or another level. Only actionable before drawing starts: once the line is
+        // live, reaching for a button means lifting a finger, which ends the round anyway.
+        let pauseButton = SKNode()
+        pauseButton.position = CGPoint(x: sceneSize.width / 2 - 30, y: top)
+        pauseButton.name = "pause_button"
+
+        let disc = SKShapeNode(circleOfRadius: 20)
+        disc.fillColor = theme.hudTextColor.withAlphaComponent(0.12)
+        disc.strokeColor = theme.hudTextColor.withAlphaComponent(0.28)
+        disc.lineWidth = 1.5
+        disc.name = "pause_button"
+        pauseButton.addChild(disc)
+
+        let pauseIcon = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        pauseIcon.text = "❚❚"
+        pauseIcon.fontSize = 17
+        pauseIcon.fontColor = theme.hudTextColor.withAlphaComponent(0.9)
+        pauseIcon.verticalAlignmentMode = .center
+        pauseIcon.horizontalAlignmentMode = .center
+        pauseIcon.name = "pause_button"
+        pauseButton.addChild(pauseIcon)
+        addChild(pauseButton)
 
         hintLabel.fontSize  = 12
         hintLabel.fontColor = theme.hudTextColor.withAlphaComponent(0.45)

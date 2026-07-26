@@ -34,7 +34,7 @@ final class GameplayUITests: XCTestCase {
     /// Home → Level Select → Level 1.
     private func startLevelOne() {
         attach("1-home")
-        coordinate(sceneX: 0, sceneY: -40).tap()      // Play
+        coordinate(sceneX: 0, sceneY: -8).tap()       // Play
         Thread.sleep(forTimeInterval: 1.0)
         attach("2-level-select")
 
@@ -65,7 +65,8 @@ final class GameplayUITests: XCTestCase {
                     thenHoldForDuration: 0.5)
         attach("4-after-drag-and-lift")
 
-        // Lifting fails the round, which fades in the Game Over scene.
+        // Lifting fails the round, which shows a transparent game-over overlay and
+        // then auto-restarts the level.
         Thread.sleep(forTimeInterval: 1.5)
         attach("5-game-over")
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 2), "app should survive the round ending")
@@ -78,7 +79,7 @@ final class GameplayUITests: XCTestCase {
         app.launchArguments = ["--unlock-all"]
         app.launch()
 
-        coordinate(sceneX: 0, sceneY: -40).tap()      // Play
+        coordinate(sceneX: 0, sceneY: -8).tap()       // Play
         Thread.sleep(forTimeInterval: 1.0)
 
         // Level 6 = index 5 → second row, second column of the 4-wide grid.

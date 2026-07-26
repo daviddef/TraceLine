@@ -33,13 +33,14 @@ final class PlayerProgress {
     }
 
     func isUnlocked(_ levelId: Int) -> Bool {
-        if levelId == 1 { return true }
+        if freePlayEnabled || levelId == 1 { return true }
         return stars(for: levelId - 1) >= 1
     }
 
     /// A world opens when the previous world's final level is cleared. World 1 is always
-    /// open.
+    /// open — and Free Play opens all of them.
     func isWorldUnlocked(_ worldId: Int) -> Bool {
+        guard !freePlayEnabled else { return true }
         guard worldId > 1 else { return true }
         guard let previous = WorldConfig.world(id: worldId - 1),
               let final = previous.finalLevelID else { return false }
@@ -92,6 +93,15 @@ final class PlayerProgress {
         set { defaults.set(newValue, forKey: "reduce_motion") }
     }
 
+    /// Free Play: every world, level and theme unlocked, no earning required. Free for now;
+    /// this is the flag a future purchase would flip. While it is on, the unlock checks
+    /// below all answer true, so the whole game is open without touching the real star
+    /// record underneath.
+    var freePlayEnabled: Bool {
+        get { defaults.bool(forKey: "free_play") }
+        set { defaults.set(newValue, forKey: "free_play") }
+    }
+
     /// Total stars earned across the whole game.
     var totalStars: Int { LevelConfig.all.reduce(0) { $0 + stars(for: $1.id) } }
 
@@ -103,6 +113,7 @@ final class PlayerProgress {
     }
 
     func isThemeUnlocked(_ key: ThemeKey) -> Bool {
+        if freePlayEnabled { return true }
         switch Theme.theme(for: key).requirement {
         case .free:                 return true
         case .clearWorld(let w):    return hasClearedWorld(w)

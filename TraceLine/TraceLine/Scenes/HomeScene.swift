@@ -51,8 +51,10 @@ final class HomeScene: SKScene {
         addChild(tagline)
 
         // Laid out top-down so adding an entry does not mean re-deriving every offset.
-        var y: CGFloat = -30
-        let step: CGFloat = 66
+        // Spacing is tight enough that all rows fit even with Continue and Free Play both
+        // present (seven of them).
+        var y: CGFloat = -8
+        let step: CGFloat = 58
         func place(_ title: String, _ name: String, primary: Bool = false) {
             addChild(ButtonNode(title: title, theme: theme, name: name,
                                 position: CGPoint(x: 0, y: y), isPrimary: primary))
@@ -63,6 +65,7 @@ final class HomeScene: SKScene {
         if let continueLevel {
             place("Continue — Level \(continueLevel.id)", "continue_button")
         }
+        place("✦  Free Play", "freeplay_button")
         place("∞  Endless", "endless_button")
         place("🎨  Themes", "themes_button")
         place("🏆  Leaderboard", "leaderboard_button")
@@ -73,7 +76,7 @@ final class HomeScene: SKScene {
             bestLabel.text = "Best \(best.formatted())"
             bestLabel.fontSize = 12
             bestLabel.fontColor = theme.hudTextColor.withAlphaComponent(0.4)
-            bestLabel.position = CGPoint(x: 0, y: -size.height / 2 + 50)
+            bestLabel.position = CGPoint(x: 0, y: -size.height / 2 + 34)
             addChild(bestLabel)
         }
     }
@@ -112,6 +115,12 @@ final class HomeScene: SKScene {
         case "continue_button":
             guard let level = continueLevel else { return }
             view?.presentScene(GameScene(levelConfig: level, theme: theme, size: size),
+                               transition: .fade(withDuration: 0.3))
+        case "freeplay_button":
+            // Free for now — this is where a future purchase would gate. It opens the whole
+            // game: every world, level and theme, no earning required.
+            PlayerProgress.shared.freePlayEnabled = true
+            view?.presentScene(LevelSelectScene(theme: theme, size: size, worldID: 1),
                                transition: .fade(withDuration: 0.3))
         case "endless_button":
             view?.presentScene(GameScene(levelConfig: Endless.config(forWave: 1),
