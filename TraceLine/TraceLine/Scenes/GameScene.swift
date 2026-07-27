@@ -716,7 +716,7 @@ final class GameScene: SKScene {
         overlay.addChild(title)
 
         let reasonLabel = SKLabelNode(fontNamed: Fonts.body(for: theme))
-        reasonLabel.text = reason.displayText
+        reasonLabel.text = reason.quip
         reasonLabel.fontSize = 16
         reasonLabel.fontColor = theme.hudTextColor.withAlphaComponent(0.8)
         reasonLabel.position = CGPoint(x: 0, y: 2)

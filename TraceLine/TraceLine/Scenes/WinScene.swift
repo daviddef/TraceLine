@@ -19,6 +19,14 @@ final class WinScene: SKScene {
 
     private var nextLevel: LevelConfig? { LevelConfig.level(id: levelConfig.id + 1) }
 
+    /// A little personality on the clear — cheekier for a flawless three-star run.
+    private var winTitle: String {
+        let bank = roundScore.starsEarned >= 3
+            ? ["Flawless!", "Show-off. 😏", "Nailed it!", "Not a line out of place."]
+            : ["Level Clear!", "Nice one!", "Cleared!", "Onwards!"]
+        return bank.randomElement() ?? "Level Clear!"
+    }
+
     override func didMove(to view: SKView) {
         backgroundColor = theme.background
         addChild(BackgroundNode(theme: theme, size: size))
@@ -27,7 +35,7 @@ final class WinScene: SKScene {
         addStars()
 
         let title = SKLabelNode(fontNamed: Fonts.display(for: theme))
-        title.text = "Level Clear!"
+        title.text = winTitle
         title.fontSize = 34
         title.fontColor = theme.hudTextColor
         title.position = CGPoint(x: 0, y: 170)

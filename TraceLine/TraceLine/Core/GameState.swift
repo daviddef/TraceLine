@@ -26,6 +26,30 @@ enum FailReason {
         case .burnedOut:    return "🔥 The line burned out"
         }
     }
+
+    /// A light, family-friendly line for the game-over screen — it still says what went
+    /// wrong, just with a wink. Picked at random so failing a lot stays fresh.
+    var quip: String {
+        let bank: [String]
+        switch self {
+        case .fingerLifted:
+            bank = ["💥 You let go — so did the line.", "💥 Commitment issues.",
+                    "💥 Fingers down! All of them.", "💥 So close, yet so lifted."]
+        case .lineCrossed:
+            bank = ["🚫 You crossed your own line.", "🚫 Tangled!",
+                    "🚫 Don't cross the streams.", "🚫 Your past self got you."]
+        case .obstacleHit:
+            bank = ["⛔ Right into it. Bonk.", "⛔ That one was solid.",
+                    "⛔ Maybe go *around* next time.", "⛔ Ouch."]
+        case .timeExpired:
+            bank = ["⏱ The clock won this round.", "⏱ Too careful, too slow.",
+                    "⏱ Time's up — draw bolder!"]
+        case .burnedOut:
+            bank = ["🔥 The flame caught the tip.", "🔥 Burned to the end.",
+                    "🔥 Should've run for a shelter."]
+        }
+        return bank.randomElement() ?? displayText
+    }
 }
 
 /// Centralised state machine — owned by GameScene, observed via delegate.
