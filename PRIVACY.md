@@ -1,12 +1,12 @@
 # Privacy Policy — TraceLine
 
-**Last updated: 16 July 2026**
+**Last updated: 27 July 2026**
 
 ## The short version
 
-TraceLine does not collect, transmit, or share any personal information. There is no
-account, no analytics, no advertising, and no server to send anything to. The game works
-entirely offline.
+TraceLine has no account, no analytics, and no server of its own. Your game data stays on
+your device. The game shows **non-personalized** ads through Google AdMob — ads that are
+**not** targeted using an advertising identifier and do **not** track you across apps.
 
 ## What the app stores
 
@@ -26,18 +26,29 @@ tied to your Game Center identity rather than anything TraceLine knows about you
 
 Game Center is entirely optional. Declining to sign in has no effect on gameplay.
 
+## Advertising
+
+TraceLine shows ads supplied by Google AdMob. They are configured as **non-personalized**:
+AdMob is asked not to use an advertising identifier to target them, so the ads are based on
+general context rather than a profile of you, and TraceLine does not track you across other
+apps or websites. Google may still process limited data (such as coarse, non-identifying
+signals and ad interactions) to serve and measure those ads and to prevent fraud, under
+[Google's Privacy Policy](https://policies.google.com/privacy). TraceLine itself receives
+none of that data. See [Google's partner policy](https://policies.google.com/technologies/partner-sites)
+for how Google handles data in apps that use its services.
+
 ## What the app does not do
 
 - No analytics or crash-reporting SDKs
-- No advertising or ad identifiers
-- No tracking across apps or websites
-- No in-app purchases
-- No collection of contacts, location, photos, or device identifiers
-- No data sold or shared with third parties
+- No personalized (targeted) advertising, and no tracking across apps or websites
+- No in-app purchases (yet)
+- No collection of your contacts, location, photos, or account identity
+- TraceLine itself sells or shares nothing with third parties
 
 ## Children
 
-TraceLine is suitable for all ages and collects nothing from anyone, children included.
+TraceLine is suitable for all ages. It collects nothing itself, and its ads are
+non-personalized.
 
 ## Changes
 

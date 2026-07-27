@@ -1,31 +1,37 @@
 import UIKit
+#if canImport(GoogleMobileAds)
+import GoogleMobileAds
+#endif
 
-/// The seam for AdMob, deliberately inert until the SDK is wired — the same shape as
-/// `Store` (IAP) and `Analytics`: the call sites are the valuable part, so adopting the
-/// Google Mobile Ads SDK later is a change to this file alone rather than a hunt through
-/// the scenes.
+/// AdMob, non-personalized. The real SDK calls are guarded by `canImport(GoogleMobileAds)`,
+/// so this file compiles with or without the package: without it (as in CI that can't fetch
+/// the SDK) every method is inert and the game shows no ads; with it (a normal Xcode build
+/// once the SwiftPM package is added) ads are live. `isEnabled` follows `canImport`, so
+/// adding the package *is* the switch — there is no flag to forget, and a build without the
+/// SDK can never show an empty ad break.
 ///
-/// Everything is gated on `isEnabled`, which is false until, in order:
-///   1. The `GoogleMobileAds` package is added (SwiftPM) — see project.yml.
-///   2. Info.plist carries `GADApplicationIdentifier`, the `SKAdNetworkItems` list, and
-///      `NSUserTrackingUsageDescription` (App Tracking Transparency).
-///   3. A `PrivacyInfo.xcprivacy` manifest declares the tracking, and the App Store privacy
-///      section + PRIVACY.md are updated from "Data Not Collected".
-///   4. Real ad-unit ids replace the test ids below.
-///   5. The listing copy drops the "No ads" line.
+/// Non-personalized: every request carries `npa=1`, so no advertising identifier is used for
+/// tracking. That is why there is no App Tracking Transparency prompt and the privacy
+/// declaration needs no "used to track you" — matched by PrivacyInfo.xcprivacy.
 ///
-/// While disabled, every method is a no-op and the game behaves exactly as it does today.
+/// SDK API targets Google Mobile Ads v11/v12 (the no-"GAD"-prefix Swift naming). If the
+/// version SwiftPM resolves differs, the symbols below are where to adjust.
 enum AdManager {
 
-    /// The v1 kill switch. Leave false until the five steps above are done.
-    static let isEnabled = false
+    /// Live only when the SDK is linked. Adding the SwiftPM package turns ads on.
+    static var isEnabled: Bool {
+        #if canImport(GoogleMobileAds)
+        return true
+        #else
+        return false
+        #endif
+    }
 
-    /// From App Store Connect (given). Goes in Info.plist as `GADApplicationIdentifier`.
+    /// From App Store Connect. Also goes in Info.plist as `GADApplicationIdentifier`.
     static let applicationID = "ca-app-pub-4156851882993001~8627606652"
 
-    /// Ad-unit ids. DEBUG builds always use Google's public *test* ids, so development and
-    /// TestFlight-from-Xcode never serve (or let you click) a live ad — clicking your own
-    /// live ads is a policy violation. Release builds use the real units from AdMob.
+    /// Ad-unit ids. DEBUG builds use Google's public *test* ids so development never serves
+    /// (or clicks) a live ad; release builds use the real TraceLine units.
     enum Unit {
         #if DEBUG
         static let banner   = "ca-app-pub-3940256099942544/2934735716"   // Google test
@@ -37,14 +43,11 @@ enum AdManager {
     }
 
     /// Ads never reach a paying customer: if the tip/remove-ads product is owned, stay quiet.
-    static var adsSuppressed: Bool {
-        Store.isPurchased(.tipJar)
-    }
+    static var adsSuppressed: Bool { Store.isPurchased(.tipJar) }
 
     /// Game-over ad cadence: most fails restart instantly; every Nth is an ad break with a
-    /// banner. Counting lives here (a static, so it survives the per-level scene rebuilds)
-    /// and returns false whenever ads are off — so the instant auto-restart is unchanged
-    /// until the SDK is live.
+    /// banner. Counting survives the per-level scene rebuilds, and returns false whenever ads
+    /// are off — so the instant auto-restart is unchanged until the SDK is live.
     static let adBreakEvery = 5
     private static var failsSinceBreak = 0
 
@@ -58,34 +61,62 @@ enum AdManager {
         return false
     }
 
-    /// Call once at launch. Requests App Tracking Transparency, then starts the SDK.
+    /// Call once at launch. Non-personalized, so no ATT request is needed first.
     static func start() {
-        guard isEnabled else { return }
-        // GoogleMobileAds: request ATT (iOS 14+), then MobileAds.shared.start(...).
-    }
-
-    /// A full-screen ad shown on a natural break — every few level clears, never mid-draw.
-    /// Returns whether one was shown, so the caller can sequence what comes after it.
-    @discardableResult
-    static func showInterstitial(from controller: UIViewController) -> Bool {
-        guard isEnabled, !adsSuppressed else { return false }
-        // GoogleMobileAds: present a preloaded GADInterstitialAd.
-        return false
+        #if canImport(GoogleMobileAds)
+        MobileAds.shared.start(completionHandler: nil)
+        #endif
     }
 
     /// A rewarded ad the player opts into — e.g. "start this level with a shield". The
-    /// completion carries whether the reward was earned (the ad watched to the end).
+    /// completion carries whether the reward was earned. (A player who dismisses the ad
+    /// early simply is not rewarded; the caller should assume no reward until told otherwise.)
     static func showRewarded(from controller: UIViewController, reward: @escaping (Bool) -> Void) {
-        guard isEnabled, !adsSuppressed else { return reward(false) }
-        // GoogleMobileAds: present a GADRewardedAd; call reward(true) in its reward handler.
+        #if canImport(GoogleMobileAds)
+        guard !adsSuppressed else { return reward(false) }
+        RewardedAd.load(with: Unit.rewarded, request: nonPersonalizedRequest()) { ad, error in
+            guard let ad, error == nil else { return reward(false) }
+            ad.present(from: controller) { reward(true) }
+        }
+        #else
         reward(false)
+        #endif
     }
 
-    /// A banner for the game-over screen. Returns the view to place, or nil while disabled —
+    /// A banner for the game-over break. Returns the view to place, or nil while disabled —
     /// the scene adds nothing when nil, so the layout is unchanged until ads are live.
     static func makeGameOverBanner() -> UIView? {
-        guard isEnabled, !adsSuppressed else { return nil }
-        // GoogleMobileAds: return a configured GADBannerView(adSize:).
+        #if canImport(GoogleMobileAds)
+        guard !adsSuppressed else { return nil }
+        let banner = BannerView(adSize: AdSizeBanner)
+        banner.adUnitID = Unit.banner
+        banner.rootViewController = topViewController()
+        banner.load(nonPersonalizedRequest())
+        return banner
+        #else
         return nil
+        #endif
     }
+
+    #if canImport(GoogleMobileAds)
+    /// Every request opts out of personalization (`npa=1`) — no identifier used for tracking.
+    private static func nonPersonalizedRequest() -> Request {
+        let request = Request()
+        let extras = Extras()
+        extras.additionalParameters = ["npa": "1"]
+        request.register(extras)
+        return request
+    }
+
+    /// The frontmost view controller, for presenting/rooting ads.
+    private static func topViewController() -> UIViewController? {
+        let scene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        var top = scene?.keyWindow?.rootViewController
+            ?? scene?.windows.first?.rootViewController
+        while let presented = top?.presentedViewController { top = presented }
+        return top
+    }
+    #endif
 }
