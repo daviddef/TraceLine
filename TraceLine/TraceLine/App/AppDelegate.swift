@@ -34,6 +34,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
         GameCenter.authenticate(presentingFrom: rootViewController)
         Store.start()      // no-ops while Store.isEnabled is false
+        AdManager.start()   // no-ops while AdManager.isEnabled is false
         SoundHook.warmUp()  // preload sound effects so the first cue doesn't stall
         return true
     }
