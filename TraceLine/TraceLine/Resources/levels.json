@@ -8,7 +8,8 @@
     "obstacleTypes": [],
     "spawnInterval": 99.0,
     "maxObstacles": 0,
-    "gridSize": 15
+    "gridSize": 15,
+    "collectibles": 3
   },
   {
     "id": 2,
@@ -22,7 +23,8 @@
     "spawnInterval": 5.0,
     "maxObstacles": 2,
     "gridSize": 16,
-    "lineEffect": "spark"
+    "lineEffect": "spark",
+    "collectibles": 3
   },
   {
     "id": 3,
@@ -43,7 +45,8 @@
         "radius": 0.15
       }
     ],
-    "lineEffect": "fade"
+    "lineEffect": "fade",
+    "collectibles": 2
   },
   {
     "id": 4,
@@ -65,7 +68,8 @@
         "radius": 0.13
       }
     ],
-    "lineEffect": "pulse"
+    "lineEffect": "pulse",
+    "collectibles": 2
   },
   {
     "id": 5,

@@ -74,6 +74,19 @@ final class RoundScoreTests: XCTestCase {
                                  timeRemaining: 0, nearMissCount: 1, starsEarned: 1)
         XCTAssertEqual(scrappy.clean, 0)
     }
+
+    /// Pips collected add to the round total; a round with none is unaffected.
+    func testCollectiblePipsAddToTheTotal() {
+        let none = RoundScore(baseDistance: 0, coveragePct: 0,
+                              timeRemaining: 0, nearMissCount: 1, starsEarned: 1)
+        XCTAssertEqual(none.bonus, 0)
+        XCTAssertEqual(none.total, 0)
+
+        let withPips = RoundScore(baseDistance: 0, coveragePct: 0,
+                                  timeRemaining: 0, nearMissCount: 1, starsEarned: 1,
+                                  bonus: 3 * CollectibleNode.value)
+        XCTAssertEqual(withPips.total, 750)
+    }
 }
 
 final class LevelConfigTests: XCTestCase {

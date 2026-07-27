@@ -54,6 +54,10 @@ final class GameScene: SKScene {
     /// World 4's darkness veil, when the level is dark. Its torch follows the drawing tip.
     private var darknessNode: DarknessNode?
 
+    /// Bonus pips on the board, and the points banked from eating them this round.
+    private var collectibleNodes: [CollectibleNode] = []
+    private var collectibleBonus = 0
+
     /// A camera so the whole view can be shaken for impact. At the origin it changes
     /// nothing; a shake offsets it briefly.
     private let cameraNode = SKCameraNode()
@@ -302,6 +306,30 @@ final class GameScene: SKScene {
             addChild(dark)
             darknessNode = dark
         }
+
+        spawnCollectibles()
+    }
+
+    /// Scatters the level's bonus pips across the board, spread apart and off the edges, so
+    /// each is a reachable little detour rather than a cluster.
+    private func spawnCollectibles() {
+        guard levelConfig.collectibleCount > 0 else { return }
+        let margin: CGFloat = 46
+        var placed: [CGPoint] = []
+        for _ in 0..<levelConfig.collectibleCount {
+            for _ in 0..<200 {
+                let p = CGPoint(x: .random(in: playRect.minX + margin ... playRect.maxX - margin),
+                                y: .random(in: playRect.minY + margin ... playRect.maxY - margin))
+                if placed.contains(where: { GeometryHelpers.distance($0, p) < 96 }) { continue }
+                let pip = CollectibleNode()
+                pip.position = p
+                pip.zPosition = 4       // above the grid, below hazards and the line
+                addChild(pip)
+                collectibleNodes.append(pip)
+                placed.append(p)
+                break
+            }
+        }
     }
 
     /// A drifting streak field so the wind is visible before it bites — principle 3.
@@ -336,6 +364,44 @@ final class GameScene: SKScene {
         }
         addChild(field)
         boardNodes.append(field)
+    }
+
+    /// Eats any pip the drawing tip has reached this frame: a pop, a bright tick, a floating
+    /// score, and points banked into the round.
+    private func collectPipsNearTip() {
+        guard !collectibleNodes.isEmpty, let tip = drawingEngine.points.last else { return }
+        let reached = collectibleNodes.filter {
+            GeometryHelpers.distance($0.position, tip) < CollectibleNode.collectRadius
+        }
+        for pip in reached {
+            collectibleNodes.removeAll { $0 === pip }
+            collectibleBonus += CollectibleNode.value
+            pip.collect()
+            Haptics.tap()
+            SoundHook.play(.nearMiss)
+            showFloatingScore("+\(CollectibleNode.value)", at: pip.position)
+        }
+        if !reached.isEmpty { refreshScore() }
+    }
+
+    /// The live HUD score: distance drawn, plus banked waves, plus pips eaten.
+    private func refreshScore() {
+        score = bankedScore + Int(drawingEngine.totalDistance * 2) + collectibleBonus
+        hudNode.updateScore(score)
+    }
+
+    private func showFloatingScore(_ text: String, at point: CGPoint) {
+        let label = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        label.text = text
+        label.fontSize = 20
+        label.fontColor = SKColor(hex: "#ffd24a")
+        label.position = point
+        label.zPosition = 60
+        addChild(label)
+        label.run(.sequence([
+            .group([.moveBy(x: 0, y: 42, duration: 0.8), .fadeOut(withDuration: 0.8)]),
+            .removeFromParent(),
+        ]))
     }
 
     /// The grid and shelters for the current config. Rebuilt on every endless wave.
@@ -415,6 +481,7 @@ final class GameScene: SKScene {
         guard stateMachine.phase == .drawing else { return }
 
         activeDrawTime += dt      // time actually spent drawing, for the measured speed
+        collectPipsNearTip()
 
         applyCutters()
         updateDoomedTail()
@@ -486,8 +553,7 @@ final class GameScene: SKScene {
         switch drawingEngine.extend(to: pos, obstacles: obstacleDescriptors()) {
         case .ok:
             lineNode.update(points: drawingEngine.points)
-            score = bankedScore + Int(drawingEngine.totalDistance * 2)
-            hudNode.updateScore(score)
+            refreshScore()
         case .fail(let reason):
             triggerFail(reason: reason)
         }
@@ -673,7 +739,8 @@ final class GameScene: SKScene {
                    coveragePct: coverage,
                    timeRemaining: max(0, timeRemaining),
                    nearMissCount: drawingEngine.nearMissCount,
-                   starsEarned: stars)
+                   starsEarned: stars,
+                   bonus: collectibleBonus)
     }
 
     // MARK: - Fail

@@ -68,11 +68,17 @@ struct LevelConfig: Codable, Identifiable {
 
     var isDark: Bool { dark ?? false }
 
+    /// Bonus pips scattered on the board — route your line through one to eat it for points.
+    /// Optional; absent means none.
+    let collectibles: Int?
+
+    var collectibleCount: Int { collectibles ?? 0 }
+
     /// Built in code rather than decoded — endless generates its boards per wave.
     init(id: Int, name: String?, world: Int, timeLimit: TimeInterval, targetCoverage: Float,
          obstacleTypes: [ObstacleType], spawnInterval: TimeInterval, maxObstacles: Int,
          gridSize: Int, safeZones: [SafeZoneConfig]? = nil, lineEffect: LineEffect? = nil,
-         windX: Float? = nil, windY: Float? = nil, dark: Bool? = nil) {
+         windX: Float? = nil, windY: Float? = nil, dark: Bool? = nil, collectibles: Int? = nil) {
         self.id = id
         self.name = name
         self.world = world
@@ -87,6 +93,7 @@ struct LevelConfig: Codable, Identifiable {
         self.windX = windX
         self.windY = windY
         self.dark = dark
+        self.collectibles = collectibles
     }
 
     var zones: [SafeZoneConfig] { safeZones ?? [] }

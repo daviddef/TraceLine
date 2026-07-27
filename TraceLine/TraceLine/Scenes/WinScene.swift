@@ -154,12 +154,15 @@ final class WinScene: SKScene {
     }()
 
     private func addBreakdown() {
-        let rows: [(String, String)] = [
+        var rows: [(String, String)] = [
             ("Base Score", "+\(roundScore.base.formatted())"),
             ("Coverage (\(Int(roundScore.coveragePct * 100))%)", "+\(roundScore.cover.formatted())"),
             ("Speed Bonus", roundScore.speed > 0 ? "+\(roundScore.speed.formatted())" : "—"),
             ("Clean Run", roundScore.clean > 0 ? "+\(roundScore.clean.formatted())" : "—"),
         ]
+        if roundScore.bonus > 0 {
+            rows.append(("Pips 🟡", "+\(roundScore.bonus.formatted())"))
+        }
 
         let width: CGFloat = 260
         var y: CGFloat = 90
