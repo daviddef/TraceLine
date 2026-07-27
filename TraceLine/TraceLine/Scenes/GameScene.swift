@@ -65,6 +65,12 @@ final class GameScene: SKScene {
     private var shieldAura: SKNode?
     private var shieldGrace: TimeInterval = 0
 
+    /// The occasional ad-break game-over (every Nth fail): a screen that waits for a tap
+    /// rather than auto-restarting, with room for a banner. Held so touches can reach its
+    /// buttons and the banner subview can be torn down on the way out.
+    private var adBreakOverlay: SKNode?
+    private var adBannerView: UIView?
+
     /// A camera so the whole view can be shaken for impact. At the origin it changes
     /// nothing; a shake offsets it briefly.
     private let cameraNode = SKCameraNode()
@@ -582,6 +588,10 @@ final class GameScene: SKScene {
         guard let touch = touches.first else { return }
         let pos = touch.location(in: self)
 
+        if adBreakOverlay != nil {
+            handleAdBreakTouch(at: pos)
+            return
+        }
         if stateMachine.phase == .paused {
             handlePauseTouch(at: pos)
             return
@@ -822,8 +832,103 @@ final class GameScene: SKScene {
                                    drawSpeed: measuredDrawSpeed))
         lineNode.triggerFail { [weak self] in
             guard let self else { return }
-            self.showFailOverlayAndRestart(reason: reason)
+            var adBreak = AdManager.shouldBreakForAd()
+            #if DEBUG
+            if CommandLine.arguments.contains("--debug-adbreak") { adBreak = true }
+            #endif
+            if adBreak {
+                self.showAdBreakGameOver(reason: reason)
+            } else {
+                self.showFailOverlayAndRestart(reason: reason)
+            }
         }
+    }
+
+    /// The every-Nth-fail ad break: a full game-over that waits for a tap instead of
+    /// restarting on its own, with a banner (a placeholder until the SDK is live). The
+    /// instant auto-restart still handles every other fail, so the fast loop is intact.
+    private func showAdBreakGameOver(reason: FailReason) {
+        let overlay = SKNode()
+        overlay.zPosition = 260
+
+        let dim = SKShapeNode(rectOf: size)
+        dim.fillColor = theme.background.withAlphaComponent(0.9)
+        dim.strokeColor = .clear
+        overlay.addChild(dim)
+
+        let title = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        title.text = "Game Over"
+        title.fontSize = 36
+        title.fontColor = theme.hudTextColor
+        title.position = CGPoint(x: 0, y: 150)
+        overlay.addChild(title)
+
+        let quip = SKLabelNode(fontNamed: Fonts.body(for: theme))
+        quip.text = reason.quip
+        quip.fontSize = 16
+        quip.fontColor = theme.hudTextColor.withAlphaComponent(0.8)
+        quip.position = CGPoint(x: 0, y: 112)
+        overlay.addChild(quip)
+
+        let scoreLabel = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        scoreLabel.text = "Score \(score.formatted())"
+        scoreLabel.fontSize = 22
+        scoreLabel.fontColor = theme.hudAccentColor
+        scoreLabel.position = CGPoint(x: 0, y: 66)
+        overlay.addChild(scoreLabel)
+
+        // Banner: a real GADBannerView subview when the SDK is live, otherwise a labelled
+        // placeholder so the layout is honest about the space it reserves.
+        if let banner = AdManager.makeGameOverBanner(), let view {
+            banner.center = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
+            view.addSubview(banner)
+            adBannerView = banner
+        } else {
+            let strip = SKShapeNode(rectOf: CGSize(width: 320, height: 50), cornerRadius: 6)
+            strip.fillColor = theme.hudTextColor.withAlphaComponent(0.06)
+            strip.strokeColor = theme.hudTextColor.withAlphaComponent(0.18)
+            strip.position = CGPoint(x: 0, y: 0)
+            let tag = SKLabelNode(fontNamed: Fonts.body(for: theme))
+            tag.text = "Ad"
+            tag.fontSize = 12
+            tag.fontColor = theme.hudTextColor.withAlphaComponent(0.4)
+            tag.verticalAlignmentMode = .center
+            strip.addChild(tag)
+            overlay.addChild(strip)
+        }
+
+        overlay.addChild(ButtonNode(title: "▶  Play Again", theme: theme, name: "playagain_button",
+                                    position: CGPoint(x: 0, y: -78)))
+        overlay.addChild(ButtonNode(title: "Home", theme: theme, name: "home_button",
+                                    position: CGPoint(x: 0, y: -148), isPrimary: false))
+
+        overlay.alpha = 0
+        overlay.run(.fadeIn(withDuration: 0.2))
+        addChild(overlay)
+        adBreakOverlay = overlay
+    }
+
+    private func handleAdBreakTouch(at pos: CGPoint) {
+        switch atPoint(pos).name {
+        case "playagain_button":
+            Haptics.tap()
+            dismissAdBreak()
+            restartCurrentLevel()
+        case "home_button":
+            Haptics.tap()
+            dismissAdBreak()
+            view?.presentScene(HomeScene(theme: theme, size: size),
+                               transition: .fade(withDuration: 0.3))
+        default:
+            break
+        }
+    }
+
+    private func dismissAdBreak() {
+        adBannerView?.removeFromSuperview()
+        adBannerView = nil
+        adBreakOverlay?.removeFromParent()
+        adBreakOverlay = nil
     }
 
     /// A game-over that does not stop the game. Instead of a full screen with a "Try Again"

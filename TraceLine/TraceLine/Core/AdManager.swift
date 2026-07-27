@@ -37,6 +37,23 @@ enum AdManager {
         Store.isPurchased(.tipJar)
     }
 
+    /// Game-over ad cadence: most fails restart instantly; every Nth is an ad break with a
+    /// banner. Counting lives here (a static, so it survives the per-level scene rebuilds)
+    /// and returns false whenever ads are off — so the instant auto-restart is unchanged
+    /// until the SDK is live.
+    static let adBreakEvery = 5
+    private static var failsSinceBreak = 0
+
+    static func shouldBreakForAd() -> Bool {
+        guard isEnabled, !adsSuppressed else { return false }
+        failsSinceBreak += 1
+        if failsSinceBreak >= adBreakEvery {
+            failsSinceBreak = 0
+            return true
+        }
+        return false
+    }
+
     /// Call once at launch. Requests App Tracking Transparency, then starts the SDK.
     static func start() {
         guard isEnabled else { return }
