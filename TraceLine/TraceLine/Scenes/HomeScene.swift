@@ -23,84 +23,168 @@ final class HomeScene: SKScene {
     override func didMove(to view: SKView) {
         backgroundColor = theme.background
         addChild(BackgroundNode(theme: theme, size: size))
-        addDecorativeLine()
+
+        let top = size.height / 2
 
         let title = SKLabelNode(fontNamed: Fonts.display(for: theme))
         title.text = "TraceLine"
-        title.fontSize = 52
+        title.fontSize = 48
         title.fontColor = theme.lineColor
-        title.position = CGPoint(x: 0, y: 190)
+        title.position = CGPoint(x: 0, y: top - 130)
         addChild(title)
-
-        // A gear in the top-right corner, kept out of the main menu column.
-        let gear = SKLabelNode(fontNamed: Fonts.body(for: theme))
-        gear.text = "⚙︎"
-        gear.fontSize = 26
-        gear.fontColor = theme.hudTextColor.withAlphaComponent(0.55)
-        gear.verticalAlignmentMode = .center
-        gear.horizontalAlignmentMode = .center
-        gear.position = CGPoint(x: size.width / 2 - 34, y: size.height / 2 - 54)
-        gear.name = "settings_button"
-        addChild(gear)
 
         let tagline = SKLabelNode(fontNamed: Fonts.body(for: theme))
         tagline.text = "DRAW. SURVIVE. DON'T LIFT."
         tagline.fontSize = 13
         tagline.fontColor = theme.hudTextColor.withAlphaComponent(0.5)
-        tagline.position = CGPoint(x: 0, y: 155)
+        tagline.position = CGPoint(x: 0, y: top - 168)
         addChild(tagline)
 
-        // Laid out top-down so adding an entry does not mean re-deriving every offset.
-        // Spacing is tight enough that all rows fit even with Continue and Free Play both
-        // present (seven of them).
-        var y: CGFloat = -8
-        let step: CGFloat = 58
-        func place(_ title: String, _ name: String, primary: Bool = false) {
-            addChild(ButtonNode(title: title, theme: theme, name: name,
-                                position: CGPoint(x: 0, y: y), isPrimary: primary))
-            y -= step
-        }
+        // Settings gear, top-right.
+        addCornerIcon("⚙︎", name: "settings_button", x: size.width / 2 - 34, y: top - 54)
 
-        place("▶  Play", "play_button", primary: true)
-        if let continueLevel {
-            place("Continue — Level \(continueLevel.id)", "continue_button")
-        }
-        place("✦  Free Play", "freeplay_button")
-        place("∞  Endless", "endless_button")
-        place("🎨  Themes", "themes_button")
-        place("🏆  Leaderboard", "leaderboard_button")
+        addHighScoreBar(y: top - 224)
 
-        let best = PlayerProgress.shared.globalHighScore
-        if best > 0 {
-            let bestLabel = SKLabelNode(fontNamed: Fonts.body(for: theme))
-            bestLabel.text = "Best \(best.formatted())"
-            bestLabel.fontSize = 12
-            bestLabel.fontColor = theme.hudTextColor.withAlphaComponent(0.4)
-            bestLabel.position = CGPoint(x: 0, y: -size.height / 2 + 34)
-            addChild(bestLabel)
-        }
+        // Primary action: the campaign map.
+        addChild(ButtonNode(title: "▶  Play", theme: theme, name: "play_button",
+                            position: CGPoint(x: 0, y: 66),
+                            size: CGSize(width: 264, height: 58)))
+
+        // The three ways to play, as cards side by side.
+        addModeCards(y: -70)
+
+        // Themes, secondary, below the cards.
+        addChild(ButtonNode(title: "🎨  Themes", theme: theme, name: "themes_button",
+                            position: CGPoint(x: 0, y: -186), isPrimary: false,
+                            size: CGSize(width: 264, height: 54)))
     }
 
-    /// A looping trace of the game's own mechanic behind the title.
-    private func addDecorativeLine() {
-        let path = CGMutablePath()
-        let width = size.width - 80
-        path.move(to: CGPoint(x: -width / 2, y: 60))
-        var x = -width / 2
-        var up = true
-        while x < width / 2 {
-            x += 26
-            path.addLine(to: CGPoint(x: min(x, width / 2), y: up ? 92 : 40))
-            up.toggle()
-        }
+    // MARK: - Top bar: high score + leaderboard
 
-        let line = SKShapeNode(path: path)
-        line.strokeColor = theme.lineColor.withAlphaComponent(0.25)
-        line.lineWidth = theme.lineWidth
-        line.lineCap = .round
-        line.lineJoin = .round
-        line.fillColor = .clear
-        addChild(line)
+    private func addHighScoreBar(y: CGFloat) {
+        let best = PlayerProgress.shared.globalHighScore
+
+        let caption = SKLabelNode(fontNamed: Fonts.body(for: theme))
+        caption.text = best > 0 ? "BEST" : "NO SCORE YET"
+        caption.fontSize = 11
+        caption.fontColor = theme.hudTextColor.withAlphaComponent(0.45)
+        caption.verticalAlignmentMode = .center
+        caption.position = CGPoint(x: 0, y: y + 20)
+        addChild(caption)
+
+        // Score + trophy, centred as a group. The trophy opens the leaderboard.
+        let number = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        number.text = best > 0 ? best.formatted() : "—"
+        number.fontSize = 34
+        number.fontColor = theme.hudAccentColor
+        number.verticalAlignmentMode = .center
+        number.horizontalAlignmentMode = .center
+        addChild(number)
+
+        let trophy = SKLabelNode(fontNamed: Fonts.body(for: theme))
+        trophy.text = "🏆"
+        trophy.fontSize = 26
+        trophy.verticalAlignmentMode = .center
+        trophy.horizontalAlignmentMode = .center
+        trophy.name = "leaderboard_button"
+
+        // A generous invisible hit pad behind the trophy, so it is easy to tap.
+        let pad = SKShapeNode(circleOfRadius: 24)
+        pad.fillColor = theme.hudTextColor.withAlphaComponent(0.06)
+        pad.strokeColor = .clear
+        pad.name = "leaderboard_button"
+
+        let gap: CGFloat = 22
+        let numHalf = number.frame.width / 2
+        number.position = CGPoint(x: -22, y: y)
+        let trophyX = number.position.x + numHalf + gap
+        trophy.position = CGPoint(x: trophyX, y: y)
+        pad.position = trophy.position
+        addChild(pad)
+        addChild(trophy)
+    }
+
+    // MARK: - Mode cards
+
+    private func addModeCards(y: CGFloat) {
+        let margin: CGFloat = 22, gap: CGFloat = 12
+        let cardW = (size.width - margin * 2 - gap * 2) / 3
+        let cardSize = CGSize(width: cardW, height: 104)
+        let step = cardW + gap
+
+        let cont = continueLevel
+        addChild(modeCard(icon: "▶▶", title: "Continue",
+                          subtitle: cont.map { "Level \($0.id)" } ?? "Locked",
+                          name: "continue_button", enabled: cont != nil,
+                          size: cardSize, at: CGPoint(x: -step, y: y)))
+        addChild(modeCard(icon: "✦", title: "Free Play", subtitle: "All unlocked",
+                          name: "freeplay_button", enabled: true,
+                          size: cardSize, at: CGPoint(x: 0, y: y)))
+        addChild(modeCard(icon: "∞", title: "Endless", subtitle: "One run",
+                          name: "endless_button", enabled: true,
+                          size: cardSize, at: CGPoint(x: step, y: y)))
+    }
+
+    private func modeCard(icon: String, title: String, subtitle: String,
+                          name: String, enabled: Bool,
+                          size cardSize: CGSize, at position: CGPoint) -> SKNode {
+        let container = SKNode()
+        container.position = position
+        let tag = enabled ? name : "locked"
+
+        let card = SKShapeNode(rectOf: cardSize, cornerRadius: 16)
+        card.fillColor = theme.hudTextColor.withAlphaComponent(0.06)
+        card.strokeColor = theme.hudTextColor.withAlphaComponent(0.18)
+        card.lineWidth = 1.5
+        card.name = tag
+        card.alpha = enabled ? 1 : 0.4
+        container.addChild(card)
+
+        let iconLabel = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        iconLabel.text = icon
+        iconLabel.fontSize = 26
+        iconLabel.fontColor = theme.lineColor
+        iconLabel.verticalAlignmentMode = .center
+        iconLabel.horizontalAlignmentMode = .center
+        iconLabel.position = CGPoint(x: 0, y: 22)
+        iconLabel.name = tag
+        iconLabel.alpha = enabled ? 1 : 0.4
+        container.addChild(iconLabel)
+
+        let titleLabel = SKLabelNode(fontNamed: Fonts.display(for: theme))
+        titleLabel.text = title
+        titleLabel.fontSize = 15
+        titleLabel.fontColor = theme.hudTextColor
+        titleLabel.verticalAlignmentMode = .center
+        titleLabel.horizontalAlignmentMode = .center
+        titleLabel.position = CGPoint(x: 0, y: -14)
+        titleLabel.name = tag
+        titleLabel.alpha = enabled ? 1 : 0.5
+        container.addChild(titleLabel)
+
+        let subLabel = SKLabelNode(fontNamed: Fonts.body(for: theme))
+        subLabel.text = subtitle
+        subLabel.fontSize = 10
+        subLabel.fontColor = theme.hudTextColor.withAlphaComponent(0.5)
+        subLabel.verticalAlignmentMode = .center
+        subLabel.horizontalAlignmentMode = .center
+        subLabel.position = CGPoint(x: 0, y: -36)
+        subLabel.name = tag
+        container.addChild(subLabel)
+
+        return container
+    }
+
+    private func addCornerIcon(_ glyph: String, name: String, x: CGFloat, y: CGFloat) {
+        let icon = SKLabelNode(fontNamed: Fonts.body(for: theme))
+        icon.text = glyph
+        icon.fontSize = 26
+        icon.fontColor = theme.hudTextColor.withAlphaComponent(0.55)
+        icon.verticalAlignmentMode = .center
+        icon.horizontalAlignmentMode = .center
+        icon.position = CGPoint(x: x, y: y)
+        icon.name = name
+        addChild(icon)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {

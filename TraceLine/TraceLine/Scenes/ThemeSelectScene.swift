@@ -61,75 +61,92 @@ final class ThemeSelectScene: SKScene {
 
     private func themeCard(for cardTheme: Theme, isActive: Bool, isUnlocked: Bool,
                            size cardSize: CGSize, at position: CGPoint) -> SKNode {
+        // Locked cards must stay clearly visible — a dark locked theme dimmed to nothing
+        // (as retro was) hides what the player is working toward. So locked cards get a
+        // neutral, fully-opaque treatment drawn in the *current* theme's colours, and hide
+        // the real palette behind a lock until it is earned. Only unlocked cards preview
+        // their own colours.
         let name = isUnlocked ? "theme_\(cardTheme.key.rawValue)" : "locked"
+        let leftText = -cardSize.width / 2 + 24
         let container = SKNode()
         container.position = position
 
         let card = SKShapeNode(rectOf: cardSize, cornerRadius: 16)
-        card.fillColor = cardTheme.background
+        card.fillColor = isUnlocked ? cardTheme.background
+                                    : theme.hudTextColor.withAlphaComponent(0.07)
         card.strokeColor = isActive ? theme.hudAccentColor
-                                    : theme.hudTextColor.withAlphaComponent(0.15)
+                                    : theme.hudTextColor.withAlphaComponent(0.18)
         card.lineWidth = isActive ? 3 : 1.5
-        card.alpha = isUnlocked ? 1 : 0.4
         card.name = name
         container.addChild(card)
 
-        // A sample of the theme's own line, drawn on its own background.
-        let sample = CGMutablePath()
-        sample.move(to: CGPoint(x: -cardSize.width / 2 + 20, y: -14))
-        sample.addLine(to: CGPoint(x: -cardSize.width / 2 + 44, y: 14))
-        sample.addLine(to: CGPoint(x: -cardSize.width / 2 + 68, y: -14))
-        sample.addLine(to: CGPoint(x: -cardSize.width / 2 + 92, y: 14))
-        let sampleLine = SKShapeNode(path: sample)
-        sampleLine.strokeColor = cardTheme.lineColor
-        sampleLine.lineWidth = cardTheme.lineWidth
-        sampleLine.lineCap = cardTheme.lineCap
-        sampleLine.fillColor = .clear
-        sampleLine.alpha = isUnlocked ? cardTheme.lineAlpha : 0.4
-        sampleLine.name = name
-        container.addChild(sampleLine)
-
-        let dot = SKShapeNode(circleOfRadius: 7)
-        dot.fillColor = cardTheme.obstacleColors[0]
-        dot.strokeColor = .clear
-        dot.position = CGPoint(x: -cardSize.width / 2 + 112, y: 0)
-        dot.alpha = isUnlocked ? 1 : 0.4
-        dot.name = name
-        container.addChild(dot)
-
-        let nameLabel = SKLabelNode(fontNamed: Fonts.display(for: cardTheme))
+        let nameLabel = SKLabelNode(fontNamed: Fonts.display(for: isUnlocked ? cardTheme : theme))
         nameLabel.text = cardTheme.displayName
         nameLabel.fontSize = 18
-        nameLabel.fontColor = cardTheme.hudTextColor
+        nameLabel.fontColor = isUnlocked ? cardTheme.hudTextColor : theme.hudTextColor
         nameLabel.horizontalAlignmentMode = .left
         nameLabel.verticalAlignmentMode = .center
-        nameLabel.position = CGPoint(x: -cardSize.width / 2 + 136, y: isUnlocked ? 0 : 10)
-        nameLabel.alpha = isUnlocked ? 1 : 0.4
         nameLabel.name = name
-        container.addChild(nameLabel)
 
-        // A padlock alone tells the player nothing. Say what it costs.
-        if !isUnlocked {
+        if isUnlocked {
+            // Preview the theme's own line and hazard colour on its own background.
+            let sample = CGMutablePath()
+            sample.move(to: CGPoint(x: -cardSize.width / 2 + 20, y: -14))
+            sample.addLine(to: CGPoint(x: -cardSize.width / 2 + 44, y: 14))
+            sample.addLine(to: CGPoint(x: -cardSize.width / 2 + 68, y: -14))
+            sample.addLine(to: CGPoint(x: -cardSize.width / 2 + 92, y: 14))
+            let sampleLine = SKShapeNode(path: sample)
+            sampleLine.strokeColor = cardTheme.lineColor
+            sampleLine.lineWidth = cardTheme.lineWidth
+            sampleLine.lineCap = cardTheme.lineCap
+            sampleLine.fillColor = .clear
+            sampleLine.alpha = cardTheme.lineAlpha
+            sampleLine.name = name
+            container.addChild(sampleLine)
+
+            let dot = SKShapeNode(circleOfRadius: 7)
+            dot.fillColor = cardTheme.obstacleColors[0]
+            dot.strokeColor = .clear
+            dot.position = CGPoint(x: -cardSize.width / 2 + 112, y: 0)
+            dot.name = name
+            container.addChild(dot)
+
+            nameLabel.position = CGPoint(x: -cardSize.width / 2 + 136, y: 0)
+            container.addChild(nameLabel)
+
+            let status = SKLabelNode(fontNamed: Fonts.display(for: theme))
+            status.text = isActive ? "✓" : ""
+            status.fontSize = 20
+            status.fontColor = cardTheme.hudAccentColor
+            status.horizontalAlignmentMode = .right
+            status.verticalAlignmentMode = .center
+            status.position = CGPoint(x: cardSize.width / 2 - 20, y: 0)
+            status.name = name
+            container.addChild(status)
+        } else {
+            // Locked: a lock where the preview would be, the name, and what it costs.
+            let lock = SKLabelNode(fontNamed: Fonts.body(for: theme))
+            lock.text = "🔒"
+            lock.fontSize = 22
+            lock.verticalAlignmentMode = .center
+            lock.horizontalAlignmentMode = .center
+            lock.position = CGPoint(x: -cardSize.width / 2 + 48, y: 0)
+            lock.name = name
+            container.addChild(lock)
+
+            nameLabel.position = CGPoint(x: leftText + 80, y: 11)
+            container.addChild(nameLabel)
+
             let need = SKLabelNode(fontNamed: Fonts.body(for: theme))
             need.text = cardTheme.requirement.describedShort
-            need.fontSize = 11
-            need.fontColor = theme.hudTextColor.withAlphaComponent(0.55)
+            need.fontSize = 12
+            need.fontColor = theme.hudAccentColor.withAlphaComponent(0.9)
             need.horizontalAlignmentMode = .left
             need.verticalAlignmentMode = .center
-            need.position = CGPoint(x: -cardSize.width / 2 + 136, y: -11)
+            need.position = CGPoint(x: leftText + 80, y: -12)
             need.name = name
             container.addChild(need)
         }
-
-        let status = SKLabelNode(fontNamed: Fonts.display(for: theme))
-        status.text = isUnlocked ? (isActive ? "✓" : "") : "🔒"
-        status.fontSize = 20
-        status.fontColor = cardTheme.hudAccentColor
-        status.horizontalAlignmentMode = .right
-        status.verticalAlignmentMode = .center
-        status.position = CGPoint(x: cardSize.width / 2 - 20, y: 0)
-        status.name = name
-        container.addChild(status)
 
         return container
     }
