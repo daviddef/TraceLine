@@ -102,7 +102,20 @@ final class GameViewController: UIViewController {
                                          theme: Theme.active, size: view.bounds.size))
             return
         }
+
+        // The first-run tutorial, forced for iterating on it.
+        if CommandLine.arguments.contains("--debug-tutorial") {
+            skView.presentScene(TutorialScene(theme: Theme.active, size: view.bounds.size))
+            return
+        }
         #endif
+
+        // First launch ever: teach the two rules before dropping into the menu. UI tests and
+        // any seeded-progress launch skip it so they start where they expect.
+        if !PlayerProgress.shared.hasSeenTutorial {
+            skView.presentScene(TutorialScene(theme: Theme.active, size: view.bounds.size))
+            return
+        }
 
         skView.presentScene(HomeScene(theme: Theme.active, size: view.bounds.size))
     }

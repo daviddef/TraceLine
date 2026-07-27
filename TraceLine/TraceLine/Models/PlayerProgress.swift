@@ -101,6 +101,13 @@ final class PlayerProgress {
         set { defaults.set(newValue, forKey: "glow_enabled") }
     }
 
+    /// Whether the first-run how-to-play has been shown. The game fails you fast, so a cold
+    /// open is punishing; this gates a one-time tutorial before the first visit to the menu.
+    var hasSeenTutorial: Bool {
+        get { defaults.bool(forKey: "seen_tutorial") }
+        set { defaults.set(newValue, forKey: "seen_tutorial") }
+    }
+
     /// Free Play: every world, level and theme unlocked, no earning required. Free for now;
     /// this is the flag a future purchase would flip. While it is on, the unlock checks
     /// below all answer true, so the whole game is open without touching the real star

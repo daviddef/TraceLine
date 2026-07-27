@@ -20,6 +20,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
            let count = Int(CommandLine.arguments[i + 1]) {
             PlayerProgress.shared.seedProgress(upTo: count)
         }
+        // Any test/tooling launch expects to start at a known scene, not the first-run
+        // tutorial. Mark it seen so the gate in GameViewController falls through.
+        for arg in ["--reset-progress", "--unlock-all", "--progress"] where CommandLine.arguments.contains(arg) {
+            PlayerProgress.shared.hasSeenTutorial = true
+        }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
         let rootViewController = GameViewController()
