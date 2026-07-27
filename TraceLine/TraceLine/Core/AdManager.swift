@@ -23,13 +23,17 @@ enum AdManager {
     /// From App Store Connect (given). Goes in Info.plist as `GADApplicationIdentifier`.
     static let applicationID = "ca-app-pub-4156851882993001~8627606652"
 
-    /// Google's public *test* unit ids — safe to ship in a debug build, and what we develop
-    /// against so we never accidentally serve (or click) a live ad. Real ids replace these
-    /// at step 4.
+    /// Ad-unit ids. DEBUG builds always use Google's public *test* ids, so development and
+    /// TestFlight-from-Xcode never serve (or let you click) a live ad — clicking your own
+    /// live ads is a policy violation. Release builds use the real units from AdMob.
     enum Unit {
-        static let banner      = "ca-app-pub-3940256099942544/2934735716"
-        static let interstitial = "ca-app-pub-3940256099942544/4411468910"
-        static let rewarded    = "ca-app-pub-3940256099942544/1712485313"
+        #if DEBUG
+        static let banner   = "ca-app-pub-3940256099942544/2934735716"   // Google test
+        static let rewarded = "ca-app-pub-3940256099942544/1712485313"   // Google test
+        #else
+        static let banner   = "ca-app-pub-4156851882993001/4757478552"   // TraceLine banner
+        static let rewarded = "ca-app-pub-4156851882993001/3444396883"   // TraceLine rewarded
+        #endif
     }
 
     /// Ads never reach a paying customer: if the tip/remove-ads product is owned, stay quiet.
