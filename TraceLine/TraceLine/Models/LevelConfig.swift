@@ -80,12 +80,21 @@ struct LevelConfig: Codable, Identifiable {
 
     var shieldCount: Int { shields ?? 0 }
 
+    /// Freeze pickups — eating one slows the clock and every moving hazard for a few
+    /// seconds. Ghost pickups — the line passes through itself and hazards for a few
+    /// seconds. Both optional; absent means none.
+    let freezes: Int?
+    let ghosts: Int?
+
+    var freezeCount: Int { freezes ?? 0 }
+    var ghostCount: Int { ghosts ?? 0 }
+
     /// Built in code rather than decoded — endless generates its boards per wave.
     init(id: Int, name: String?, world: Int, timeLimit: TimeInterval, targetCoverage: Float,
          obstacleTypes: [ObstacleType], spawnInterval: TimeInterval, maxObstacles: Int,
          gridSize: Int, safeZones: [SafeZoneConfig]? = nil, lineEffect: LineEffect? = nil,
          windX: Float? = nil, windY: Float? = nil, dark: Bool? = nil, collectibles: Int? = nil,
-         shields: Int? = nil) {
+         shields: Int? = nil, freezes: Int? = nil, ghosts: Int? = nil) {
         self.id = id
         self.name = name
         self.world = world
@@ -102,6 +111,8 @@ struct LevelConfig: Codable, Identifiable {
         self.dark = dark
         self.collectibles = collectibles
         self.shields = shields
+        self.freezes = freezes
+        self.ghosts = ghosts
     }
 
     var zones: [SafeZoneConfig] { safeZones ?? [] }

@@ -325,7 +325,9 @@
         "radius": 0.12
       }
     ],
-    "lineEffect": "ember"
+    "lineEffect": "ember",
+    "freezes": 1,
+    "collectibles": 1
   },
   {
     "id": 15,
@@ -436,7 +438,9 @@
         "y": 0.5,
         "radius": 0.11
       }
-    ]
+    ],
+    "ghosts": 1,
+    "collectibles": 1
   },
   {
     "id": 19,
@@ -653,7 +657,9 @@
       }
     ],
     "windX": 1.6,
-    "windY": 0
+    "windY": 0,
+    "freezes": 1,
+    "collectibles": 1
   },
   {
     "id": 27,
@@ -713,7 +719,9 @@
       }
     ],
     "windX": 1.4,
-    "windY": 1.0
+    "windY": 1.0,
+    "ghosts": 1,
+    "collectibles": 1
   },
   {
     "id": 29,

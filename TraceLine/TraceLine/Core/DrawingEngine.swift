@@ -43,34 +43,39 @@ final class DrawingEngine {
     /// The point the player asks for is not necessarily the point that gets drawn: magnets
     /// bend it on the way in. Everything downstream — crossing, collision, coverage —
     /// uses the deflected point, because that is where the line actually went.
-    func extend(to requested: CGPoint, obstacles: [ObstacleDescriptor]) -> DrawResult {
+    /// `ghost` (World 5's power-up) makes the line intangible: it records the point even
+    /// where it would cross itself or strike an obstacle, so the round continues instead of
+    /// ending. Everything else — the pull, the coverage the points imply — is unchanged.
+    func extend(to requested: CGPoint, obstacles: [ObstacleDescriptor], ghost: Bool = false) -> DrawResult {
         guard let last = points.last else { return .ok }
         let newPoint = pulled(requested, obstacles: obstacles)
         let d = GeometryHelpers.distance(last, newPoint)
         guard d >= MIN_POINT_SPACING else { return .ok }
 
-        // 1. Self-crossing
-        if wouldCross(newPoint: newPoint) { return .fail(.lineCrossed) }
+        if !ghost {
+            // 1. Self-crossing
+            if wouldCross(newPoint: newPoint) { return .fail(.lineCrossed) }
 
-        // 2. Obstacle collision — test the whole proposed segment, not just its
-        //    endpoint, so a fast flick can't tunnel straight through an obstacle.
-        for obs in obstacles where obs.isLethal && obs.intersectsSegment(from: last, to: newPoint) {
-            return .fail(.obstacleHit)
+            // 2. Obstacle collision — test the whole proposed segment, not just its
+            //    endpoint, so a fast flick can't tunnel straight through an obstacle.
+            for obs in obstacles where obs.isLethal && obs.intersectsSegment(from: last, to: newPoint) {
+                return .fail(.obstacleHit)
+            }
+
+            // 3. Near-misses (no fail, just counted for the 3-star check)
+            updateNearMisses(at: newPoint, obstacles: obstacles)
         }
 
-        // 3. Near-misses (no fail, just counted for the 3-star check)
-        updateNearMisses(at: newPoint, obstacles: obstacles)
-
-        // All clear — record the point
+        // All clear (or ghosting) — record the point
         points.append(newPoint)
         totalDistance += d
         return .ok
     }
 
     /// Obstacles fall onto a stationary finger too, so the tip needs a collision
-    /// check every frame and not only when the player moves.
-    func checkTipCollision(obstacles: [ObstacleDescriptor]) -> DrawResult {
-        guard let tip = points.last else { return .ok }
+    /// check every frame and not only when the player moves. Ghosting skips it entirely.
+    func checkTipCollision(obstacles: [ObstacleDescriptor], ghost: Bool = false) -> DrawResult {
+        guard !ghost, let tip = points.last else { return .ok }
         for obs in obstacles where obs.isLethal && obs.contains(tip) { return .fail(.obstacleHit) }
         updateNearMisses(at: tip, obstacles: obstacles)
         return .ok

@@ -71,6 +71,17 @@ final class GameScene: SKScene {
     private var adBreakOverlay: SKNode?
     private var adBannerView: UIView?
 
+    /// Freeze: seconds of slow-mo left (the clock and every moving hazard crawl). Ghost:
+    /// seconds of intangibility left (the line passes through itself and hazards). Their
+    /// tints are shown while active.
+    private var freezeRemaining: TimeInterval = 0
+    private var ghostRemaining: TimeInterval = 0
+    private var freezeTint: SKNode?
+    private var ghostTint: SKNode?
+    private var isFrozen: Bool { freezeRemaining > 0 }
+    private var isGhosting: Bool { ghostRemaining > 0 }
+    private static let powerUpDuration: TimeInterval = 3.5
+
     /// A camera so the whole view can be shaken for impact. At the origin it changes
     /// nothing; a shake offsets it briefly.
     private let cameraNode = SKCameraNode()
@@ -328,6 +339,8 @@ final class GameScene: SKScene {
     private func spawnCollectibles() {
         let kinds = Array(repeating: CollectibleNode.Kind.pip, count: levelConfig.collectibleCount)
                   + Array(repeating: CollectibleNode.Kind.shield, count: levelConfig.shieldCount)
+                  + Array(repeating: CollectibleNode.Kind.freeze, count: levelConfig.freezeCount)
+                  + Array(repeating: CollectibleNode.Kind.ghost, count: levelConfig.ghostCount)
         guard !kinds.isEmpty else { return }
         let margin: CGFloat = 46
         var placed: [CGPoint] = []
@@ -395,14 +408,69 @@ final class GameScene: SKScene {
             pip.collect()
             Haptics.tap()
             SoundHook.play(.nearMiss)
-            if pip.kind == .shield {
+            switch pip.kind {
+            case .shield:
                 grantShield()
                 showFloatingScore("🛡 Shield!", at: where_)
-            } else {
+            case .freeze:
+                startFreeze()
+                showFloatingScore("❄️ Freeze!", at: where_)
+            case .ghost:
+                startGhost()
+                showFloatingScore("👻 Ghost!", at: where_)
+            case .pip:
                 showFloatingScore("+\(pip.value)", at: where_)
             }
         }
         if !reached.isEmpty { refreshScore() }
+    }
+
+    // MARK: - Freeze & Ghost
+
+    /// Slow the clock and every moving hazard for a few seconds, with a cool tint over the
+    /// board while it lasts.
+    private func startFreeze() {
+        freezeRemaining = Self.powerUpDuration
+        Haptics.tap()
+        if freezeTint == nil {
+            let tint = SKSpriteNode(color: SKColor(hex: "#38bdf8"), size: size)
+            tint.alpha = 0.14
+            tint.blendMode = .add
+            tint.zPosition = 40
+            addChild(tint)
+            freezeTint = tint
+        }
+    }
+
+    /// Make the line intangible for a few seconds — it can cross itself and pass through
+    /// hazards. The line is drawn wispy and a purple tint marks the window.
+    private func startGhost() {
+        ghostRemaining = Self.powerUpDuration
+        Haptics.tap()
+        lineNode.alpha = 0.5
+        if ghostTint == nil {
+            let tint = SKSpriteNode(color: SKColor(hex: "#c084fc"), size: size)
+            tint.alpha = 0.12
+            tint.blendMode = .add
+            tint.zPosition = 40
+            addChild(tint)
+            ghostTint = tint
+        }
+    }
+
+    /// Ticks the power-up timers each frame and tears their effects down when they lapse.
+    private func advancePowerUps(dt: TimeInterval) {
+        if freezeRemaining > 0 {
+            freezeRemaining -= dt
+            if freezeRemaining <= 0 { freezeTint?.removeFromParent(); freezeTint = nil }
+        }
+        if ghostRemaining > 0 {
+            ghostRemaining -= dt
+            if ghostRemaining <= 0 {
+                ghostTint?.removeFromParent(); ghostTint = nil
+                lineNode.alpha = 1
+            }
+        }
     }
 
     // MARK: - Shield
@@ -505,12 +573,15 @@ final class GameScene: SKScene {
 
         guard stateMachine.phase == .drawing || stateMachine.phase == .idle else { return }
 
+        // While frozen, every moving hazard (and the fuse, below) crawls.
+        let hazardDt = isFrozen ? dt * 0.12 : dt
+
         // Obstacles. Hunters need to know where the tip is before they move. In a posed
         // demo they hold their placed position (and aim) rather than wandering off.
         let tip = drawingEngine.points.last
         for obs in obstacleNodes {
             if obs.obstacleType == .hunter && !isDemoPath { obs.huntTarget = tip }
-            obs.update(dt: dt, playRect: playRect)
+            obs.update(dt: hazardDt, playRect: playRect)
             obs.rebound(off: safeZones)
             if obs.isOffBoard(playRect) { recycleObstacle(obs) }
         }
@@ -535,6 +606,7 @@ final class GameScene: SKScene {
             shieldAura.position = tip
         }
         if shieldGrace > 0 { shieldGrace = max(0, shieldGrace - dt) }
+        advancePowerUps(dt: dt)
 
         #if DEBUG
         if mode == .endless, autoAdvancesWaves, drawingEngine.pointCount >= 2 {
@@ -550,20 +622,21 @@ final class GameScene: SKScene {
 
         applyCutters()
         updateDoomedTail()
-        if case .fail = applyFuses(dt: dt) {
+        if case .fail = applyFuses(dt: hazardDt) {
             triggerFail(reason: .burnedOut)
             return
         }
 
         // An obstacle can fall onto a finger that isn't moving, so the tip is
-        // re-checked every frame and not only on touchesMoved.
-        if case .fail(let reason) = drawingEngine.checkTipCollision(obstacles: obstacleDescriptors()) {
+        // re-checked every frame and not only on touchesMoved. Ghosting passes through.
+        if case .fail(let reason) = drawingEngine.checkTipCollision(obstacles: obstacleDescriptors(),
+                                                                    ghost: isGhosting) {
             triggerFail(reason: reason)
             return
         }
 
-        // Countdown
-        timeRemaining -= dt
+        // Countdown — paused while frozen.
+        if !isFrozen { timeRemaining -= dt }
         hudNode.updateTimer(remaining: max(0, timeRemaining))
         if timeRemaining <= 0 {
             triggerFail(reason: .timeExpired)
@@ -619,7 +692,7 @@ final class GameScene: SKScene {
         // fail condition.
         let pos = clampToPlayArea(touch.location(in: self))
 
-        switch drawingEngine.extend(to: pos, obstacles: obstacleDescriptors()) {
+        switch drawingEngine.extend(to: pos, obstacles: obstacleDescriptors(), ghost: isGhosting) {
         case .ok:
             lineNode.update(points: drawingEngine.points)
             refreshScore()
@@ -646,6 +719,7 @@ final class GameScene: SKScene {
     /// the finger. Coverage is recomputed from the surviving points, so the bar retracts
     /// on its own and the player watches the loss happen.
     private func applyCutters() {
+        guard !isGhosting else { return }   // intangible: a cutter passes through, no sever
         let cutters = obstacleNodes.filter { $0.obstacleType.severs }
         guard !cutters.isEmpty, drawingEngine.pointCount >= 2 else { return }
 
