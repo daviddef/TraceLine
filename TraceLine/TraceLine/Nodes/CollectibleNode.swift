@@ -1,35 +1,57 @@
 import SpriteKit
 
-/// A bonus pip you route your line through to eat. It is a hazard inverted — contact is
-/// *good* — so it deliberately does not wear any hazard colour: a warm gold orb that reads
-/// as treasure, gently pulsing and bobbing so the eye is drawn to it.
+/// A collectible you route your line through to eat. Contact is a hazard *inverted* —
+/// it is good — so it wears no hazard colour. Two kinds so far:
+///   - `.pip`   — a warm gold orb worth bonus points.
+///   - `.shield` — a green orb that grants a one-hit shield (deflects the next object).
 final class CollectibleNode: SKNode {
+
+    enum Kind { case pip, shield }
+
+    let kind: Kind
 
     static let radius: CGFloat = 11
     /// How close the drawing tip must come to eat it — a touch bigger than the body, so a
     /// near-miss still feels like a catch rather than a tease.
     static let collectRadius: CGFloat = 20
+    static let pipValue = 250
+    static let shieldValue = 100
 
-    /// Points awarded for eating this pip.
-    static let value = 250
+    /// Points banked for eating this one (the shield's real reward is the shield itself).
+    var value: Int { kind == .pip ? Self.pipValue : Self.shieldValue }
 
-    private static let gold = SKColor(hex: "#ffd24a")
+    private static let gold  = SKColor(hex: "#ffd24a")
+    private static let green = SKColor(hex: "#34d399")
+    private var tint: SKColor { kind == .pip ? Self.gold : Self.green }
 
-    override init() {
+    init(kind: Kind = .pip) {
+        self.kind = kind
         super.init()
+        let tint = kind == .pip ? Self.gold : Self.green
 
         let glow = SKShapeNode(circleOfRadius: Self.radius * 2.1)
-        glow.fillColor = Self.gold.withAlphaComponent(0.22)
+        glow.fillColor = tint.withAlphaComponent(0.22)
         glow.strokeColor = .clear
         glow.blendMode = .add
         addChild(glow)
 
         let body = SKShapeNode(circleOfRadius: Self.radius)
-        body.fillColor = Self.gold
+        body.fillColor = tint
         body.strokeColor = .clear
         addChild(body)
 
-        // A bright highlight, up and to the left, so the orb reads as round and glossy.
+        if kind == .shield {
+            // A ring around the orb reads as a barrier — "this one protects you".
+            let ring = SKShapeNode(circleOfRadius: Self.radius * 1.5)
+            ring.strokeColor = tint
+            ring.lineWidth = 2
+            ring.fillColor = .clear
+            ring.alpha = 0.7
+            addChild(ring)
+            ring.run(.repeatForever(.sequence([.fadeAlpha(to: 0.3, duration: 0.6),
+                                               .fadeAlpha(to: 0.7, duration: 0.6)])))
+        }
+
         let shine = SKShapeNode(circleOfRadius: Self.radius * 0.34)
         shine.fillColor = .white
         shine.strokeColor = .clear
@@ -37,7 +59,6 @@ final class CollectibleNode: SKNode {
         shine.alpha = 0.9
         addChild(shine)
 
-        // Alive: a soft breathing pulse and a slow bob so it never sits dead on the board.
         run(.repeatForever(.sequence([.scale(to: 1.12, duration: 0.6),
                                       .scale(to: 1.0, duration: 0.6)])))
         run(.repeatForever(.sequence([.moveBy(x: 0, y: 5, duration: 0.9),
@@ -46,8 +67,7 @@ final class CollectibleNode: SKNode {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used — nodes are built in code") }
 
-    /// Eat it: a bright pop of sparks, then remove. The reward feedback lives here so every
-    /// caller pops the same way.
+    /// Eat it: a bright pop of sparks in its own colour, then remove.
     func collect() {
         removeAllActions()
         let pop = SKEmitterNode()
@@ -62,7 +82,7 @@ final class CollectibleNode: SKNode {
         pop.particleSpeed = 170
         pop.particleSpeedRange = 80
         pop.emissionAngleRange = .pi * 2
-        pop.particleColor = Self.gold
+        pop.particleColor = tint
         pop.particleColorBlendFactor = 1
         pop.particleBlendMode = .add
         pop.targetNode = parent

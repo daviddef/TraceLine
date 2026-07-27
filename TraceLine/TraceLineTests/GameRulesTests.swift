@@ -84,7 +84,7 @@ final class RoundScoreTests: XCTestCase {
 
         let withPips = RoundScore(baseDistance: 0, coveragePct: 0,
                                   timeRemaining: 0, nearMissCount: 1, starsEarned: 1,
-                                  bonus: 3 * CollectibleNode.value)
+                                  bonus: 3 * CollectibleNode.pipValue)
         XCTAssertEqual(withPips.total, 750)
     }
 }

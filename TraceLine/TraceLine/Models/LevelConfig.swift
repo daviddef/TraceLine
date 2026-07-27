@@ -74,11 +74,18 @@ struct LevelConfig: Codable, Identifiable {
 
     var collectibleCount: Int { collectibles ?? 0 }
 
+    /// Shield pickups on the board — eating one lets you deflect the next object that hits
+    /// the line. Optional; absent means none.
+    let shields: Int?
+
+    var shieldCount: Int { shields ?? 0 }
+
     /// Built in code rather than decoded — endless generates its boards per wave.
     init(id: Int, name: String?, world: Int, timeLimit: TimeInterval, targetCoverage: Float,
          obstacleTypes: [ObstacleType], spawnInterval: TimeInterval, maxObstacles: Int,
          gridSize: Int, safeZones: [SafeZoneConfig]? = nil, lineEffect: LineEffect? = nil,
-         windX: Float? = nil, windY: Float? = nil, dark: Bool? = nil, collectibles: Int? = nil) {
+         windX: Float? = nil, windY: Float? = nil, dark: Bool? = nil, collectibles: Int? = nil,
+         shields: Int? = nil) {
         self.id = id
         self.name = name
         self.world = world
@@ -94,6 +101,7 @@ struct LevelConfig: Codable, Identifiable {
         self.windY = windY
         self.dark = dark
         self.collectibles = collectibles
+        self.shields = shields
     }
 
     var zones: [SafeZoneConfig] { safeZones ?? [] }

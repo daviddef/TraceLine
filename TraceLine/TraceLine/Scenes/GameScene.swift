@@ -58,6 +58,13 @@ final class GameScene: SKScene {
     private var collectibleNodes: [CollectibleNode] = []
     private var collectibleBonus = 0
 
+    /// Whether a shield is banked (deflects the next object to hit the line), the green aura
+    /// drawn around the tip while it is, and a brief grace after a deflect so the hazard that
+    /// was just knocked away cannot immediately re-kill.
+    private var hasShield = false
+    private var shieldAura: SKNode?
+    private var shieldGrace: TimeInterval = 0
+
     /// A camera so the whole view can be shaken for impact. At the origin it changes
     /// nothing; a shake offsets it briefly.
     private let cameraNode = SKCameraNode()
@@ -310,18 +317,20 @@ final class GameScene: SKScene {
         spawnCollectibles()
     }
 
-    /// Scatters the level's bonus pips across the board, spread apart and off the edges, so
+    /// Scatters the level's pickups across the board, spread apart and off the edges, so
     /// each is a reachable little detour rather than a cluster.
     private func spawnCollectibles() {
-        guard levelConfig.collectibleCount > 0 else { return }
+        let kinds = Array(repeating: CollectibleNode.Kind.pip, count: levelConfig.collectibleCount)
+                  + Array(repeating: CollectibleNode.Kind.shield, count: levelConfig.shieldCount)
+        guard !kinds.isEmpty else { return }
         let margin: CGFloat = 46
         var placed: [CGPoint] = []
-        for _ in 0..<levelConfig.collectibleCount {
+        for kind in kinds {
             for _ in 0..<200 {
                 let p = CGPoint(x: .random(in: playRect.minX + margin ... playRect.maxX - margin),
                                 y: .random(in: playRect.minY + margin ... playRect.maxY - margin))
                 if placed.contains(where: { GeometryHelpers.distance($0, p) < 96 }) { continue }
-                let pip = CollectibleNode()
+                let pip = CollectibleNode(kind: kind)
                 pip.position = p
                 pip.zPosition = 4       // above the grid, below hazards and the line
                 addChild(pip)
@@ -375,13 +384,59 @@ final class GameScene: SKScene {
         }
         for pip in reached {
             collectibleNodes.removeAll { $0 === pip }
-            collectibleBonus += CollectibleNode.value
+            collectibleBonus += pip.value
+            let where_ = pip.position
             pip.collect()
             Haptics.tap()
             SoundHook.play(.nearMiss)
-            showFloatingScore("+\(CollectibleNode.value)", at: pip.position)
+            if pip.kind == .shield {
+                grantShield()
+                showFloatingScore("🛡 Shield!", at: where_)
+            } else {
+                showFloatingScore("+\(pip.value)", at: where_)
+            }
         }
         if !reached.isEmpty { refreshScore() }
+    }
+
+    // MARK: - Shield
+
+    /// Bank a shield and draw the aura that shows it is up. Collecting a second one just
+    /// refreshes it — one shield at a time keeps the state legible.
+    private func grantShield() {
+        hasShield = true
+        guard shieldAura == nil else { return }
+        let aura = SKShapeNode(circleOfRadius: 26)
+        aura.strokeColor = SKColor(hex: "#34d399")
+        aura.lineWidth = 3
+        aura.glowWidth = 4
+        aura.fillColor = SKColor(hex: "#34d399").withAlphaComponent(0.12)
+        aura.zPosition = 9          // over the board, under the line's crisp stroke
+        aura.run(.repeatForever(.sequence([.scale(to: 1.12, duration: 0.5),
+                                           .scale(to: 1.0, duration: 0.5)])))
+        addChild(aura)
+        shieldAura = aura
+    }
+
+    /// A hazard hit the line while a shield was up: spend the shield, knock away whatever is
+    /// on top of the tip, and grant a short grace so it cannot immediately re-kill.
+    private func consumeShield() {
+        hasShield = false
+        shieldGrace = 0.6
+        shieldAura?.removeFromParent()
+        shieldAura = nil
+
+        let tip = drawingEngine.points.last ?? .zero
+        burst(at: tip, color: SKColor(hex: "#34d399"))
+        shake(power: 6)
+        Haptics.cut()
+
+        // Deflect: recycle any lethal object sitting on the tip, so the round can continue.
+        for obs in obstacleNodes where obs.obstacleType.isLethal
+            && GeometryHelpers.distance(obs.position, tip) < obs.hitRadius + 30 {
+            burst(at: obs.position, color: SKColor(hex: "#34d399"))
+            recycleObstacle(obs)
+        }
     }
 
     /// The live HUD score: distance drawn, plus banked waves, plus pips eaten.
@@ -470,6 +525,10 @@ final class GameScene: SKScene {
         if let darknessNode, let tip = drawingEngine.points.last {
             darknessNode.moveTorch(to: tip)
         }
+        if let shieldAura, let tip = drawingEngine.points.last {
+            shieldAura.position = tip
+        }
+        if shieldGrace > 0 { shieldGrace = max(0, shieldGrace - dt) }
 
         #if DEBUG
         if mode == .endless, autoAdvancesWaves, drawingEngine.pointCount >= 2 {
@@ -746,6 +805,12 @@ final class GameScene: SKScene {
     // MARK: - Fail
     private func triggerFail(reason: FailReason) {
         guard stateMachine.phase == .drawing || stateMachine.phase == .idle else { return }
+        // A shield (or the brief grace just after spending one) deflects an *object* hit —
+        // not a self-cross, a lifted finger, the timer, or a burn.
+        if reason == .obstacleHit {
+            if hasShield { consumeShield(); return }
+            if shieldGrace > 0 { return }
+        }
         stateMachine.transition(to: .failFlash, failReason: reason)
         Haptics.fail()
 

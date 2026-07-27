@@ -69,7 +69,8 @@
       }
     ],
     "lineEffect": "pulse",
-    "collectibles": 2
+    "collectibles": 2,
+    "shields": 1
   },
   {
     "id": 5,
@@ -167,7 +168,9 @@
         "y": 0.32,
         "radius": 0.12
       }
-    ]
+    ],
+    "shields": 1,
+    "collectibles": 1
   },
   {
     "id": 9,
@@ -269,7 +272,9 @@
         "radius": 0.12
       }
     ],
-    "lineEffect": "chase"
+    "lineEffect": "chase",
+    "shields": 1,
+    "collectibles": 1
   },
   {
     "id": 13,
@@ -376,7 +381,9 @@
         "y": 0.28,
         "radius": 0.11
       }
-    ]
+    ],
+    "shields": 1,
+    "collectibles": 1
   },
   {
     "id": 17,
