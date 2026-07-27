@@ -209,14 +209,23 @@ Ordered so each step compounds the next.
 - ✅ **Win celebration.** Palette confetti scaled to stars earned, a sparkle + bounce on each
   star, and the ambient background the win screen was missing.
 
+**Polish, shipped since (on `main`, for 1.2):**
+
+- ✅ **Hazard bloom.** Hazards now wear a soft additive multi-layer halo matching the line's
+  bloom (a per-hazard blur is unaffordable; stacked scaled copies read the same on small
+  shapes). Tied to the same Glow setting.
+- ✅ **First-run tutorial.** A one-time How to Play — a self-drawing serpentine and the two
+  rules — before the first visit to the menu.
+- ✅ **Difficulty instrumented.** The ~400 pt/s assumption is now measured: each round-end
+  event carries the sustained drawing rate, and DEBUG builds show it on the game-over overlay.
+  The model can finally be checked against a human — the check itself is still to run.
+
 **Next:**
 
 1. **Cut 1.2.** Bump the marketing version, build, ship to TestFlight (App Store review waits
    on 1.1 clearing). Verify bloom holds 60 fps on a real minimum-spec device before deciding
-   whether it stays default-on.
+   whether it stays default-on, and read the measured draw-speed against the ~400 assumption.
 2. **World 6.** The next mechanic to take — see the spine table.
-3. **More polish.** Hazard bloom (not just the line), a first-time tutorial for the two rules,
-   and the still-unmeasured difficulty assumption (~400 pt/s sustained, nobody timed).
 
 Also shipped earlier: **endless mode** (below), and a difficulty curve rebuilt to be
 measurably monotonic — now climbing unbroken across all four worlds (45 → 646 pt/s).
@@ -254,10 +263,9 @@ Beyond the immediate enrichment sequence above.
   uses is most of the machinery, and it gives the leaderboard a reason to exist.
 - **Per-level leaderboards and personal bests on the map.** The map shows stars but not
   your best score. Cheap, and it makes replay legible.
-- **First-time tutorial.** The two rules, taught on an empty board — the game fails you fast,
-  so a cold open is punishing. *(In progress as immediate polish.)*
-- **Measure the difficulty assumption.** The curve assumes ~400 pt/s sustained and nobody has
-  been timed. Instrument a real run and check the model against a human. *(In progress.)*
+- ✅ ~~**First-time tutorial.**~~ Shipped (on `main`): a one-time How to Play before the menu.
+- ✅ ~~**Instrument the difficulty assumption.**~~ Shipped (on `main`): round-end events carry
+  the measured sustained draw speed. Still to do: *read* that data against the ~400 pt/s model.
 
 ## Later
 
