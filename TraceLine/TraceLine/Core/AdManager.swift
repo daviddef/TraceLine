@@ -76,7 +76,11 @@ enum AdManager {
         guard !adsSuppressed else { return reward(false) }
         RewardedAd.load(with: Unit.rewarded, request: nonPersonalizedRequest()) { ad, error in
             guard let ad, error == nil else { return reward(false) }
-            ad.present(from: controller) { reward(true) }
+            loadedRewarded = ad          // retain it while it is on screen
+            ad.present(from: controller) {
+                reward(true)
+                loadedRewarded = nil
+            }
         }
         #else
         reward(false)
@@ -99,6 +103,9 @@ enum AdManager {
     }
 
     #if canImport(GoogleMobileAds)
+    /// Holds the rewarded ad while it is presented, so it is not deallocated mid-play.
+    private static var loadedRewarded: RewardedAd?
+
     /// Every request opts out of personalization (`npa=1`) — no identifier used for tracking.
     private static func nonPersonalizedRequest() -> Request {
         let request = Request()

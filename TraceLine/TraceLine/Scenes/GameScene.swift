@@ -110,11 +110,17 @@ final class GameScene: SKScene {
         #endif
     }
 
+    /// Set when the round is entered via the rewarded "start with a shield" ad — grants a
+    /// shield the moment play begins.
+    private let startWithShield: Bool
+
     // MARK: - Init
-    init(levelConfig: LevelConfig, theme: Theme, size: CGSize, mode: GameMode = .levels) {
+    init(levelConfig: LevelConfig, theme: Theme, size: CGSize, mode: GameMode = .levels,
+         startWithShield: Bool = false) {
         self.levelConfig = levelConfig
         self.theme = theme
         self.mode = mode
+        self.startWithShield = startWithShield
         super.init(size: size)
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scaleMode = .resizeFill
@@ -129,6 +135,7 @@ final class GameScene: SKScene {
         setupScene()
         setupHUD()
         timeRemaining = levelConfig.timeLimit
+        if startWithShield { grantShield() }
 
         #if DEBUG
         if CommandLine.arguments.contains("--demo-path") { seedDemoPath() }
@@ -972,9 +979,14 @@ final class GameScene: SKScene {
         }
 
         overlay.addChild(ButtonNode(title: "▶  Play Again", theme: theme, name: "playagain_button",
-                                    position: CGPoint(x: 0, y: -78)))
+                                    position: CGPoint(x: 0, y: -70)))
+        // Rewarded: watch an ad to start the retry already shielded. Only offered where a
+        // rewarded ad can actually be served.
+        overlay.addChild(ButtonNode(title: "🛡  Watch → Start Shielded", theme: theme,
+                                    name: "watch_shield_button",
+                                    position: CGPoint(x: 0, y: -134), isPrimary: false))
         overlay.addChild(ButtonNode(title: "Home", theme: theme, name: "home_button",
-                                    position: CGPoint(x: 0, y: -148), isPrimary: false))
+                                    position: CGPoint(x: 0, y: -198), isPrimary: false))
 
         overlay.alpha = 0
         overlay.run(.fadeIn(withDuration: 0.2))
@@ -988,6 +1000,17 @@ final class GameScene: SKScene {
             Haptics.tap()
             dismissAdBreak()
             restartCurrentLevel()
+        case "watch_shield_button":
+            Haptics.tap()
+            guard let controller = view?.window?.rootViewController else {
+                dismissAdBreak(); restartCurrentLevel(); return
+            }
+            // Keep the screen up while the ad plays; restart when it returns. A reward means
+            // the retry starts shielded; anything else (ad failed or skipped) is a normal retry.
+            AdManager.showRewarded(from: controller) { [weak self] earned in
+                self?.dismissAdBreak()
+                self?.restartCurrentLevel(withShield: earned)
+            }
         case "home_button":
             Haptics.tap()
             dismissAdBreak()
@@ -1336,15 +1359,17 @@ extension GameScene: GameStateMachineDelegate {
         }
     }
 
-    /// Starts this level (or, in endless, a fresh run) over from the beginning.
-    private func restartCurrentLevel() {
+    /// Starts this level (or, in endless, a fresh run) over from the beginning — optionally
+    /// with a shield already up, when entered via the rewarded ad.
+    private func restartCurrentLevel(withShield: Bool = false) {
         let fresh: GameScene
         if mode == .endless {
             fresh = GameScene(levelConfig: Endless.config(forWave: 1), theme: theme,
-                              size: size, mode: .endless)
+                              size: size, mode: .endless, startWithShield: withShield)
         } else {
             let base = LevelConfig.level(id: levelConfig.id) ?? levelConfig
-            fresh = GameScene(levelConfig: base, theme: theme, size: size, mode: mode)
+            fresh = GameScene(levelConfig: base, theme: theme, size: size, mode: mode,
+                              startWithShield: withShield)
         }
         view?.presentScene(fresh, transition: .fade(withDuration: 0.3))
     }
