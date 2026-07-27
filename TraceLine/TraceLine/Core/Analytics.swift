@@ -12,8 +12,12 @@ enum Analytics {
 
     enum Event {
         case levelStarted(id: Int)
-        case levelCleared(id: Int, score: Int, stars: Int, secondsRemaining: Int)
-        case levelFailed(id: Int, reason: FailReason, coveragePercent: Int)
+        // `drawSpeed` is the round's measured sustained drawing rate in points per second
+        // (distance drawn ÷ time actually drawing). The difficulty curve assumes ~400 pt/s
+        // sustained and nobody had been timed; this is how the model gets checked against a
+        // human once a provider (or the DEBUG console) is watching.
+        case levelCleared(id: Int, score: Int, stars: Int, secondsRemaining: Int, drawSpeed: Int)
+        case levelFailed(id: Int, reason: FailReason, coveragePercent: Int, drawSpeed: Int)
         case themeSelected(ThemeKey)
         case leaderboardOpened
 
@@ -31,11 +35,12 @@ enum Analytics {
             switch self {
             case .levelStarted(let id):
                 return ["level": id]
-            case .levelCleared(let id, let score, let stars, let secondsRemaining):
+            case .levelCleared(let id, let score, let stars, let secondsRemaining, let drawSpeed):
                 return ["level": id, "score": score, "stars": stars,
-                        "seconds_remaining": secondsRemaining]
-            case .levelFailed(let id, let reason, let coverage):
-                return ["level": id, "reason": reason.analyticsName, "coverage": coverage]
+                        "seconds_remaining": secondsRemaining, "draw_speed": drawSpeed]
+            case .levelFailed(let id, let reason, let coverage, let drawSpeed):
+                return ["level": id, "reason": reason.analyticsName, "coverage": coverage,
+                        "draw_speed": drawSpeed]
             case .themeSelected(let key):
                 return ["theme": key.rawValue]
             case .leaderboardOpened:

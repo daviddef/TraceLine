@@ -50,9 +50,11 @@ final class AnalyticsTests: XCTestCase {
     func testEventNamesAreStable() {
         XCTAssertEqual(Analytics.Event.levelStarted(id: 1).name, "level_started")
         XCTAssertEqual(Analytics.Event.levelCleared(id: 1, score: 0, stars: 0,
-                                                    secondsRemaining: 0).name, "level_cleared")
+                                                    secondsRemaining: 0, drawSpeed: 0).name,
+                       "level_cleared")
         XCTAssertEqual(Analytics.Event.levelFailed(id: 1, reason: .lineCrossed,
-                                                   coveragePercent: 0).name, "level_failed")
+                                                   coveragePercent: 0, drawSpeed: 0).name,
+                       "level_failed")
         XCTAssertEqual(Analytics.Event.themeSelected(.neon).name, "theme_selected")
         XCTAssertEqual(Analytics.Event.leaderboardOpened.name, "leaderboard_opened")
     }
@@ -66,18 +68,20 @@ final class AnalyticsTests: XCTestCase {
 
     func testEventCarriesItsParameters() {
         let params = Analytics.Event.levelCleared(id: 7, score: 4340, stars: 3,
-                                                  secondsRemaining: 22).parameters
+                                                  secondsRemaining: 22, drawSpeed: 380).parameters
         XCTAssertEqual(params["level"] as? Int, 7)
         XCTAssertEqual(params["score"] as? Int, 4340)
         XCTAssertEqual(params["stars"] as? Int, 3)
         XCTAssertEqual(params["seconds_remaining"] as? Int, 22)
+        XCTAssertEqual(params["draw_speed"] as? Int, 380)
     }
 
     func testFailedEventReportsTheReasonAndCoverage() {
         let params = Analytics.Event.levelFailed(id: 3, reason: .obstacleHit,
-                                                 coveragePercent: 41).parameters
+                                                 coveragePercent: 41, drawSpeed: 415).parameters
         XCTAssertEqual(params["reason"] as? String, "obstacle_hit")
         XCTAssertEqual(params["coverage"] as? Int, 41)
+        XCTAssertEqual(params["draw_speed"] as? Int, 415)
     }
 
     /// No SDK for v1, so nothing may leave the device — the App Store privacy

@@ -29,6 +29,15 @@ final class GameScene: SKScene {
     private var spawnTimer: TimeInterval = 0
     private var coverage: Float = 0
 
+    /// Seconds actually spent drawing this round — the denominator for the measured
+    /// sustained drawing speed the difficulty model has never been checked against.
+    private var activeDrawTime: TimeInterval = 0
+
+    /// Points per second the player actually sustained, distance drawn over time drawing.
+    private var measuredDrawSpeed: Int {
+        activeDrawTime > 0.2 ? Int(drawingEngine.totalDistance / CGFloat(activeDrawTime)) : 0
+    }
+
     /// Two at once is already busy: each crosses the whole board.
     private static let maxConcurrentCutters = 2
     private static let maxConcurrentFuses = 1
@@ -405,6 +414,8 @@ final class GameScene: SKScene {
 
         guard stateMachine.phase == .drawing else { return }
 
+        activeDrawTime += dt      // time actually spent drawing, for the measured speed
+
         applyCutters()
         updateDoomedTail()
         if case .fail = applyFuses(dt: dt) {
@@ -675,7 +686,8 @@ final class GameScene: SKScene {
             GameCenter.submitEndless(score: score, wave: wave)
         }
         Analytics.log(.levelFailed(id: levelConfig.id, reason: reason,
-                                   coveragePercent: Int(coverage * 100)))
+                                   coveragePercent: Int(coverage * 100),
+                                   drawSpeed: measuredDrawSpeed))
         lineNode.triggerFail { [weak self] in
             guard let self else { return }
             self.showFailOverlayAndRestart(reason: reason)
@@ -712,6 +724,11 @@ final class GameScene: SKScene {
 
         let hint = SKLabelNode(fontNamed: Fonts.body(for: theme))
         hint.text = "Restarting…"
+        #if DEBUG
+        // A live check of the difficulty model's ~400 pt/s assumption against what was
+        // actually drawn. DEBUG only — it never reaches a player.
+        if measuredDrawSpeed > 0 { hint.text = "Restarting…   ·   drew \(measuredDrawSpeed) pt/s" }
+        #endif
         hint.fontSize = 13
         hint.fontColor = theme.hudTextColor.withAlphaComponent(0.45)
         hint.position = CGPoint(x: 0, y: -34)
@@ -796,7 +813,8 @@ final class GameScene: SKScene {
         GameCenter.reportCompletion(levelsCleared: PlayerProgress.shared.completedLevelCount,
                                     timeRemaining: timeRemaining)
         Analytics.log(.levelCleared(id: levelConfig.id, score: roundScore.total, stars: stars,
-                                    secondsRemaining: Int(max(0, timeRemaining))))
+                                    secondsRemaining: Int(max(0, timeRemaining)),
+                                    drawSpeed: measuredDrawSpeed))
 
         run(.wait(forDuration: 0.6)) { [weak self] in
             guard let self, let view = self.view else { return }
